@@ -7,9 +7,10 @@ class Asteroid(physicalobject.PhysicalObject):
 
     def __init__(self, *args, **kwargs):
         super(Asteroid, self).__init__(resources.asteroid_image, *args, **kwargs)
+        self.scale = 8
 
         # Slowly rotate the asteroid as it moves
-        self.rotate_speed = random.random() * 100.0 - 50.0
+        self.rotate_speed = random.random() * 1000.0 - 50.0
 
     def update(self, dt):
         super(Asteroid, self).update(dt)
