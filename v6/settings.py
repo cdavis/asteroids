@@ -1,4 +1,5 @@
 import argparse
+import physics
 
 
 class ConfigError(Exception):
@@ -30,6 +31,18 @@ def build_config():
       '--window-height',
       type=int,
       default=768)
+
+  parser.add_argument(
+      '--physics',
+      default='pymunk',
+      choices=sorted(physics.IMPLEMENTATIONS),
+      help='Which physics engine to use')
+
+  parser.add_argument(
+      '--gravity',
+      default=900,
+      type=int,
+      help='How strong gravity is')
 
   config = parser.parse_args()
 
