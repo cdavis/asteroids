@@ -1,5 +1,8 @@
 import argparse
+import random
+
 import physics
+import resources
 
 
 class ConfigError(Exception):
@@ -12,6 +15,10 @@ def build_config():
 
   parser = argparse.ArgumentParser()
   parser.add_argument('--debug', action='store_true')
+
+  parser.add_argument(
+      'module_name',
+      help='Name of game module (excluding .py) to play')
 
   parser.add_argument(
       '--fps',
@@ -43,6 +50,12 @@ def build_config():
       default=900,
       type=int,
       help='How strong gravity is')
+
+  parser.add_argument(
+      '--song',
+      default=random.choice(list(resources.SONGS)),
+      choices=sorted(resources.SONGS),
+      help='Select your jam.')
 
   config = parser.parse_args()
 

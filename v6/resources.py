@@ -31,4 +31,8 @@ engine_image.anchor_y = engine_image.height / 2
 # Load the bullet sound _without_ streaming so we can play it more than once at a time
 bullet_sound = pyglet.resource.media("bullet.wav", streaming=False)
 
-theme_song = pyglet.resource.media("theme_song.wav")
+
+# Available music
+SONGS = {
+  "stuff": pyglet.resource.media("theme_song.wav"),
+}

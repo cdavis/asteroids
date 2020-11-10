@@ -13,15 +13,10 @@ class PhysicsEngineBase:
     self.objects = []
 
   def add_object(self, obj):
-    """Add the given game object to the simulation. This object must have
-    a '.physics' attribute that is a dict which describes how the physics
-    engine should treat the object.
+    if obj in self.objects:
+      raise Exception(f'Object {obj} already added')
 
-    physics dict may contain:
-    - mass (float)
-
-    Angular mass is always computed from mass and shape.
-    """
+    self.objects.append(obj)
 
   def step(self, dt):
     """Compute physics changes elapsed during 'dt' seconds."""
@@ -29,12 +24,6 @@ class PhysicsEngineBase:
 
 
 class CheesyPhysics(PhysicsEngineBase):
-
-  def add_object(self, obj):
-    if obj in self.objects:
-      raise Exception(f'Already added object {obj}')
-
-    self.objects.append(obj)
 
   def step(self, dt):
     # Collision detect
@@ -49,8 +38,8 @@ class PymunkPhysics(PhysicsEngineBase):
     self.space.gravity = (0, -config.gravity)
 
   def add_object(self, obj):
-    self.space.add(obj.body, obj.circle)
-    self.objects.append(obj)
+    super().add_object(obj)
+    self.space.add(obj.body, *obj.shapes.values())
 
   def step(self, dt):
     self.space.step(dt)

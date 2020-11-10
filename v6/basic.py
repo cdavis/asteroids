@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import math
+import importlib
 import logging
 import sys
 
@@ -12,32 +13,12 @@ import resources
 import settings
 
 
-class Floor(pyglet.sprite.Sprite):
-  def __init__(self, *args, **kwargs):
-    super().__init__(*args, img=resources.asteroid_image, **kwargs)
-    self.body = pymunk.Body(body_type=pymunk.Body.STATIC)
-    self.circle = pymunk.Segment(self.body, (0, 0), (2000, 0), 30)
-    self.scale = 0.00001
-
-
-class Asteroid(pyglet.sprite.Sprite):
-  def __init__(self, *args, **kwargs):
-    super().__init__(*args, img=resources.asteroid_image, **kwargs)
-    mass = 1
-    radius = 50
-    inertia = pymunk.moment_for_circle(mass, 0, radius)
-    self.body = pymunk.Body(mass, inertia)
-    self.body.position = (kwargs['x'], kwargs['y'])
-    self.body.elasticity = 1.0
-    self.circle = pymunk.Circle(self.body, radius)
-
-
 class Game:
   def __init__(self, config):
     self.config = config
 
-    physics_impl_class = physics.IMPLEMENTATIONS[config.physics]
-    self.physics = physics_impl_class(config)
+    physics_class = physics.IMPLEMENTATIONS[config.physics]
+    self.physics = physics_class(config)
 
     self.window = pyglet.window.Window(
         fullscreen=config.fullscreen,
@@ -49,24 +30,38 @@ class Game:
     self.main_batch = pyglet.graphics.Batch()
     self.keys = pyglet.window.key.KeyStateHandler()
     self.window.push_handlers(self, self.keys)
+    self.player = pyglet.media.Player()
 
-    # Keep track of how far rendering is ahead of physics so we can catch
+    # Keep track of how far real time is ahead of our physics so we can catch
     # up our simulation gracefully.
     self.uncomputed_time = 0.0
 
-    asteroid = Asteroid(x=1000, y=2000, batch=self.main_batch)
-    floor = Floor(x=0, y=0, batch=self.main_batch)
-    self.physics.add_object(asteroid)
-    self.physics.add_object(floor)
+    # Module init creates game objects and stuff.
+    module = importlib.import_module(config.module_name)
+    module.init(self)
+
+  def add_object(self, obj): #XXX collision masking?
+    """Add an object to the game. The object must by a pyglet Sprite that has
+    a pymunk .body and .shapes. Maybe something also about collision mask???
+    """
+    logging.debug(f'Game.add_object() obj={obj}')
+    obj.batch = self.main_batch
+    self.physics.add_object(obj)
 
   def run(self):
     seconds_per_frame = 1 / self.config.fps  # delay between game updates
     pyglet.clock.schedule_interval(self.update, seconds_per_frame)
-    resources.theme_song.play()
+
+    # Put our song on the jukebox, on repeat.
+    song = resources.SONGS[self.config.song]
+    self.player.queue(song)
+    self.player.loop = True
+    self.player.play()
+
     pyglet.app.run()
 
   def update(self, dt):
-    logging.debug(f'Game.update: dt ms={int(dt * 1000)}')
+    logging.debug(f'Game.update: dt={int(dt * 1000)}ms')
     self.uncomputed_time += dt
 
     # To keep the physics behavior nice and stable we should *always* pass the
@@ -82,7 +77,7 @@ class Game:
     for obj in self.physics.objects:
       logging.debug(f'updating obj {obj}: body.angle={obj.body.angle} pos.x={obj.body.position.x} pos.y={obj.body.position.y}')
       obj.rotation = math.degrees(-obj.body.angle) + 180
-      obj.position = (obj.body.position.x, obj.body.position.y)
+      obj.position = obj.body.position
 
     # spawn new game objects
     # remove dead game objects
@@ -94,7 +89,6 @@ class Game:
     self.window.clear()
     self.main_batch.draw()
     self.fps_display.draw()
-
 
 
 def main():
