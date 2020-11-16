@@ -8,6 +8,7 @@ import sys
 import pyglet
 import pymunk
 
+from objects import GameObject
 import physics
 import resources
 import settings
@@ -17,8 +18,20 @@ class Game:
   def __init__(self, config):
     self.config = config
 
+    # Load our game module, let it customize the config
+    self.module = importlib.import_module(config.module_name)
+    self.module.configure(config)
+
+    game_object_classes = {}
+    for obj in vars(self.module).values():
+      try:
+        if issubclass(obj, GameObject) and obj is not GameObject:
+          game_object_classes[obj.__name__] = obj
+      except TypeError:
+        continue
+
     physics_class = physics.IMPLEMENTATIONS[config.physics]
-    self.physics = physics_class(config)
+    self.physics = physics_class(config, game_object_classes)
 
     self.window = pyglet.window.Window(
         fullscreen=config.fullscreen,
@@ -36,9 +49,7 @@ class Game:
     # up our simulation gracefully.
     self.uncomputed_time = 0.0
 
-    # Module init creates game objects and stuff.
-    module = importlib.import_module(config.module_name)
-    module.init(self)
+    self.module.init(self)
 
   def add_object(self, obj): #XXX collision masking?
     """Add an object to the game. The object must by a pyglet Sprite that has
@@ -46,18 +57,18 @@ class Game:
     """
     logging.debug(f'Game.add_object() obj={obj}')
     obj.batch = self.main_batch
+    obj.keys = self.keys
     self.physics.add_object(obj)
+
+  def play_song(self, name, loop=False):
+    song_source = resources.SONGS[name]
+    self.player.queue(song_source)
+    self.player.loop = loop
+    self.player.play()
 
   def run(self):
     seconds_per_frame = 1 / self.config.fps  # delay between game updates
     pyglet.clock.schedule_interval(self.update, seconds_per_frame)
-
-    # Put our song on the jukebox, on repeat.
-    song = resources.SONGS[self.config.song]
-    self.player.queue(song)
-    self.player.loop = True
-    self.player.play()
-
     pyglet.app.run()
 
   def update(self, dt):
@@ -72,17 +83,22 @@ class Game:
       logging.debug('physics step')
       self.physics.step(physics_dt)
       self.uncomputed_time -= physics_dt
+      self.post_physics_step()
 
     # Update sprite positions/angles from physics shapes
     for obj in self.physics.objects:
       logging.debug(f'updating obj {obj}: body.angle={obj.body.angle} pos.x={obj.body.position.x} pos.y={obj.body.position.y}')
       obj.rotation = math.degrees(-obj.body.angle) + 180
       obj.position = obj.body.position
+      obj.update(dt)
 
     # spawn new game objects
     # remove dead game objects
     # detect game win / loss conditions
     # update hud
+
+  def post_physics_step(self):
+    """Override this to do whatever you want."""
 
   def on_draw(self):
     logging.debug('Game.on_draw')
