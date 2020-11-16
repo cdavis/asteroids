@@ -1,3 +1,10 @@
+# Weird temporary files windows leaves around
+*~
+.*~
+
+# My debugging log
+test.log
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
