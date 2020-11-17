@@ -99,18 +99,26 @@ class Floor(GameObject):
   image = resources.bullet_image
   collides_with = ['Asteroid', 'Player']
 
-  def create_body(self, **kwargs):
+  def create_body(self, width, angle, **kwargs):
     logging.info(f'Floor.create_body() kwargs={kwargs}')
-    a = (-1000, 0)
-    b = (1000, 0)
+
+    direction = pymunk.Vec2d(-math.cos(angle), -math.sin(angle))
+    a = direction * -width / 2
+    b = direction * width / 2
+ 
     radius = 10
     self.body = pymunk.Body(body_type=pymunk.Body.STATIC)
     self.body.position = (self.x, self.y)
+    self.body.angle = angle
     self.shapes = {
         'body': pymunk.Segment(self.body, a, b, radius),
     }
     self.shapes['body'].elasticity = 0.8
     self.shapes['body'].friction = 1.0
+
+    # Scale the bullet to floor-ish proportions!
+    self.scale_x = width / self.image.width
+    self.rotation = math.degrees(-self.body.angle) + 180
 
   @staticmethod
   def collision_Asteroid_begin(arbiter, space, data):
@@ -120,7 +128,7 @@ class Floor(GameObject):
 
 def configure(config):
   config.physics = 'pymunk'
-  config.gravity = 0
+  config.gravity = 900
   config.fps = 120
   config.fullscreen = True
   config.window_width = None
@@ -130,6 +138,20 @@ def configure(config):
 #XXX player death
 #XXX bullet spawning
 #XXX asteroid death / spawning
+
+
+
+def create_floors(game, fart_nugget=True):
+  assert fart_nugget
+  max_x, max_y = game.window.get_size()
+
+  floors = [
+      #Floor(x=300, y=100, width=100, angle=math.pi / 2),
+      #Floor(x=1600, y=400, width=2000, angle=2.0),
+  ]
+  for floor in floors:
+    game.add_object(floor)
+
 
 def init(game):
   min_x, min_y = 0, 0
@@ -161,8 +183,9 @@ def init(game):
   player = Player(x=max_x / 2, y=max_y / 2)
   game.add_object(player)
 
-  floor = Floor(x=max_x / 2, y=10)
-  game.add_object(floor)
+  #floor = Floor(x=max_x / 2, y=10)
+  #game.add_object(floor)
+  create_floors(game)
 
   for i in range(100):
     asteroid = Asteroid(x=randint(0, max_x), y=randint(0, max_y))

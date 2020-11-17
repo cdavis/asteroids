@@ -3,19 +3,19 @@ import pymunk
 
 
 class CollisionTyped(type):
-    """This metaclass for GameObject lets us allocate a unique collision ID to
-    each GameObject subclass."""
-    __map = {}
+  """This metaclass for GameObject lets us allocate a unique collision ID to
+  each GameObject subclass."""
+  __map = {}
 
-    def __new__(cls, name, bases, dct):
-        new = super().__new__(cls, name, bases, dct)
+  def __new__(cls, name, bases, dct):
+    new = super().__new__(cls, name, bases, dct)
 
-        if name != 'GameObject':
-            new.collision_type = len(CollisionTyped.__map) + 1
-            assert new.collision_type not in CollisionTyped.__map
-            CollisionTyped.__map[new.collision_type] = new
+    if name != 'GameObject':
+      new.collision_type = len(CollisionTyped.__map) + 1
+      assert new.collision_type not in CollisionTyped.__map
+      CollisionTyped.__map[new.collision_type] = new
 
-        return new
+    return new
 
 
 class GameObject(pyglet.sprite.Sprite, metaclass=CollisionTyped):
@@ -26,7 +26,9 @@ class GameObject(pyglet.sprite.Sprite, metaclass=CollisionTyped):
   collides_with = []
 
   def __init__(self, **kwargs):
-    super().__init__(self.image, **kwargs)
+    sprite_flags = 'x y blend_src blend_dest batch group usage subpixel'.split()
+    sprite_kwargs = {key: kwargs[key] for key in sprite_flags if key in kwargs}
+    super().__init__(self.image, **sprite_kwargs)
     self.create_body(**kwargs)
 
   def create_body(self, **kwargs):
