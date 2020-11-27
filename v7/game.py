@@ -30,8 +30,9 @@ class Game:
       except TypeError:
         continue
 
+    self.object_by_body = {}
     physics_class = physics.IMPLEMENTATIONS[config.physics]
-    self.physics = physics_class(config, game_object_classes)
+    self.physics = physics_class(self, game_object_classes)
 
     self.window = pyglet.window.Window(
         fullscreen=config.fullscreen,
@@ -51,15 +52,24 @@ class Game:
 
     self.module.init(self)
 
-  def add_object(self, obj): #XXX collision masking?
+  def add_object(self, obj):
     """Add an object to the game. The object must by a pyglet Sprite that has
     a pymunk .body and .shapes. Maybe something also about collision mask???
     """
     logging.debug(f'Game.add_object() obj={obj}')
+    self.object_by_body[obj.body] = obj
     obj.game = self
     obj.batch = self.main_batch
     obj.keys = self.keys
     self.physics.add_object(obj)
+
+  def remove_object(self, obj):
+    logging.debug(f'Game.remove_object() obj={obj}')
+    self.physics.remove_object(obj)
+    del self.object_by_body[obj.body]
+
+  def get_object_from_body(self, body):
+    return self.object_by_body[body]
 
   def play_song(self, name, loop=False):
     song_source = resources.SONGS[name]

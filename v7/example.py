@@ -21,14 +21,19 @@ class Asteroid(GameObject):
   def create_body(self, mass=1, radius=25, **unused):
     self.circle_body(mass, radius)
 
-  #@staticmethod
-  #def collision_Bullet_begin(arbiter, space, data):
-  #  #print(f'Asteroid.collision_Bullet_begin()  arbiter={arbiter} space={space} data={data}')
-  #  return True
+  @staticmethod
+  def collision_Bullet_begin(arbiter, space, data):
+    print(f'Asteroid.collision_Bullet_begin()  arbiter={arbiter} space={space} data={data}')
+    asteroid_shape, bullet_shape = arbiter.shapes
+    asteroid_obj = data['game'].get_object_from_body(asteroid_shape.body)
+    bullet_obj = data['game'].get_object_from_body(bullet_shape.body)
+    asteroid_obj.delete()
+    bullet_obj.delete()
+    return True
 
   #@staticmethod
   #def collision_Player_begin(arbiter, space, data):
-  #  #print(f'xAsteroid.collision_Player_begin()  arbiter={arbiter} space={space} data={data}')
+  #  #print(f'Asteroid.collision_Player_begin()  arbiter={arbiter} space={space} data={data}')
   #  return True
 
 
@@ -38,6 +43,12 @@ class Bullet(GameObject):
 
   def create_body(self, mass=1.0, radius=4, **unused):
     self.circle_body(mass, radius)
+
+  #@staticmethod
+  #def collision_Asteroid_begin(arbiter, space, data):
+  #  print(f'Bullet.collision_Asteroid_begin()  arbiter={arbiter} space={space} data={data}')
+  #  # kill the bullet?
+  #  return True
 
 
 

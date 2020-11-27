@@ -1,5 +1,6 @@
 import pyglet
 import pymunk
+import logging
 
 
 class CollisionTyped(type):
@@ -49,3 +50,7 @@ class GameObject(pyglet.sprite.Sprite, metaclass=CollisionTyped):
 
   def update(self, dt):  # TODO: current time
     pass
+
+  def delete(self):
+    logging.debug(f'GameObject.delete() self={self}')
+    self.game.remove_object(self)

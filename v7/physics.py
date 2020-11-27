@@ -7,8 +7,8 @@ import pymunk
 class PhysicsEngineBase:
   """Base Class for physics engine implementations."""
 
-  def __init__(self, config, object_classes):
-    self.config = config
+  def __init__(self, game, object_classes):
+    self.game = game
     self.objects = []
     self.set_allowed_collisions(object_classes)
 
@@ -20,6 +20,12 @@ class PhysicsEngineBase:
       raise Exception(f'Object {obj} already added')
 
     self.objects.append(obj)
+
+  def remove_object(self, obj):
+    if obj not in self.objects:
+      raise Exception(f'Object {obj} does not exist in the physics!')
+
+    self.objects.remove(obj)
 
   def step(self, dt):
     """Compute physics changes elapsed during 'dt' seconds."""
@@ -48,7 +54,7 @@ class PymunkPhysics(PhysicsEngineBase):
 
   def set_allowed_collisions(self, obj_classes):
     self.space = pymunk.Space()
-    self.space.gravity = (0, -self.config.gravity)
+    self.space.gravity = (0, -self.game.config.gravity)
 
     for src_class in obj_classes.values():
       for dst_class_name in src_class.collides_with:
@@ -62,6 +68,8 @@ class PymunkPhysics(PhysicsEngineBase):
             src_class.collision_type,
             dst_class.collision_type)
 
+        handler.data['game'] = self.game
+
         for phase in ['begin', 'pre_solve', 'post_solve', 'separate']:
           method_name = f'collision_{dst_class.__name__}_{phase}'
           method = getattr(src_class, method_name, None)
@@ -71,6 +79,7 @@ class PymunkPhysics(PhysicsEngineBase):
 
   def add_object(self, obj):
     super().add_object(obj)
+    self.space.add(obj.body, *obj.shapes.values())
     
     filter = pymunk.ShapeFilter(categories=obj.collision_category)
     logging.debug(f'Configuring {obj} with filter={bin(obj.collision_category)}')
@@ -78,7 +87,9 @@ class PymunkPhysics(PhysicsEngineBase):
     for shape in obj.shapes.values():
       shape.filter = filter
 
-    self.space.add(obj.body, *obj.shapes.values())
+  def remove_object(self, obj):
+    super().remove_object(obj)
+    self.space.remove(obj.body, *obj.shapes.values())
 
 
   def step(self, dt):
