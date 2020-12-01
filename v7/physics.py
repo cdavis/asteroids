@@ -34,7 +34,7 @@ class PhysicsEngineBase:
 
 class CheesyPhysics(PhysicsEngineBase):
 
-  def step(self, dt):
+  def step(self, now, dt):
     # Collision detect
     for i in range(len(self.objects)):
       for j in range(i + 1, len(self.objects)):
@@ -47,7 +47,7 @@ class CheesyPhysics(PhysicsEngineBase):
 
     # Objects to add, delete
     for obj in self.objects:
-      obj.update(dt)
+      obj.update(now, dt)
 
 
 class PymunkPhysics(PhysicsEngineBase):

@@ -4,6 +4,7 @@ import math
 import importlib
 import logging
 import sys
+import time
 
 import pyglet
 import pymunk
@@ -84,6 +85,7 @@ class Game:
 
   def update(self, dt):
     logging.debug(f'Game.update: dt={int(dt * 1000)}ms')
+    now = time.time()
     self.uncomputed_time += dt
 
     # To keep the physics behavior nice and stable we should *always* pass the
@@ -101,7 +103,7 @@ class Game:
       logging.debug(f'updating obj {obj}: body.angle={obj.body.angle} pos.x={obj.body.position.x} pos.y={obj.body.position.y}')
       obj.rotation = math.degrees(-obj.body.angle) + 180
       obj.position = obj.body.position
-      obj.update(dt)
+      obj.update(now, dt)
 
     # spawn new game objects
     # remove dead game objects

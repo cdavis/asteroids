@@ -48,7 +48,7 @@ class GameObject(pyglet.sprite.Sprite, metaclass=CollisionTyped):
     self.shapes['body'].friction = friction
     self.shapes['body'].collision_type = self.collision_type
 
-  def update(self, dt):  # TODO: current time
+  def update(self, now, dt):
     pass
 
   def delete(self):

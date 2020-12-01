@@ -41,8 +41,13 @@ class Bullet(GameObject):
   image = resources.bullet_image
   collides_with = ['Asteroid']
 
-  def create_body(self, mass=1.0, radius=4, **unused):
+  def create_body(self, mass=1.0, radius=4, lifespan=0.5, **unused):
+    self.expiration_time = time.time() + lifespan
     self.circle_body(mass, radius)
+
+  def update(self, now, dt):
+    if now > self.expiration_time:
+      self.delete()
 
   #@staticmethod
   #def collision_Asteroid_begin(arbiter, space, data):
@@ -81,7 +86,7 @@ class Player(GameObject):
     self.max_velocity = 600.0
     self.last_fired = 0.0
 
-  def update(self, dt):
+  def update(self, now, dt):
     if self.keys[KEY.LEFT]:
       self.body.angle += self.rotate_speed * dt
 
