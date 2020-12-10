@@ -29,6 +29,7 @@ class GameObject(pyglet.sprite.Sprite, metaclass=CollisionTyped):
   collides_with = []
 
   def __init__(self, **kwargs):
+    self.children = []
     sprite_flags = 'x y blend_src blend_dest batch group usage subpixel'.split()
     sprite_kwargs = {key: kwargs[key] for key in sprite_flags if key in kwargs}
     super().__init__(self.image, **sprite_kwargs)

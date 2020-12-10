@@ -25,17 +25,37 @@ class Asteroid(GameObject):
   def collision_Bullet_begin(arbiter, space, data):
     print(f'Asteroid.collision_Bullet_begin()  arbiter={arbiter} space={space} data={data}')
     asteroid_shape, bullet_shape = arbiter.shapes
-    asteroid_obj = data['game'].get_object_from_body(asteroid_shape.body)
-    bullet_obj = data['game'].get_object_from_body(bullet_shape.body)
+    game = data['game']
+
+    # This can fail because pymunk is silly.
+    try:
+      asteroid_obj = game.get_object_from_body(asteroid_shape.body)
+      bullet_obj = game.get_object_from_body(bullet_shape.body)
+    except KeyError:
+      return
+
+    radius = asteroid_obj.shapes['body'].radius
+
+    # Create new sub-asteroids by sweeping our 'clock hand' vector vec around.
+    angle = 0.0
+    num_subs = 2
+
+    if asteroid_obj.scale > 0.5:
+      for i in range(num_subs):
+        vec = pymunk.Vec2d(-math.cos(angle), -math.sin(angle))
+        vec *= radius
+        sub_asteroid = Asteroid(
+            x=vec.x + asteroid_obj.x,
+            y=vec.y + asteroid_obj.y,
+        )
+        sub_asteroid.scale = asteroid_obj.scale * 0.7
+        game.add_object(sub_asteroid)
+        angle += math.pi * 2 / num_subs
+
     asteroid_obj.delete()
     bullet_obj.delete()
     return True
-
-  #@staticmethod
-  #def collision_Player_begin(arbiter, space, data):
-  #  #print(f'Asteroid.collision_Player_begin()  arbiter={arbiter} space={space} data={data}')
-  #  return True
-
+ 
 
 class Bullet(GameObject):
   image = resources.bullet_image
@@ -48,13 +68,6 @@ class Bullet(GameObject):
   def update(self, now, dt):
     if now > self.expiration_time:
       self.delete()
-
-  #@staticmethod
-  #def collision_Asteroid_begin(arbiter, space, data):
-  #  print(f'Bullet.collision_Asteroid_begin()  arbiter={arbiter} space={space} data={data}')
-  #  # kill the bullet?
-  #  return True
-
 
 
 class Player(GameObject):
@@ -69,22 +82,21 @@ class Player(GameObject):
         'body': pymunk.Circle(self.body, radius),
     }
 
-    # Child sprite for the engine flame
-    self.engine = pyglet.sprite.Sprite(resources.engine_image)
-    self.engine.visible = False
-    # XXX pyglet has to know to draw it, in the batch, etc. pymunk dont care. i dont care.
-    # XXX Ah yes this is physics.objects not space.bodies... that is where the sprite drawing loop draws from (so maybe
-    # I need to have it also look at obj.children ?
-
     # Movement settings
     self.thrust = 400.0
     self.rotate_speed = 3.0
-    self.bullet_speed = 500.0
+    self.bullet_speed = 1000.0
     self.bullet_delay = 0.1
     self.brake_damping = 0.03
     self.min_velocity = 50.0
     self.max_velocity = 600.0
     self.last_fired = 0.0
+
+    # Child sprite for the engine flame
+    self.engine = pyglet.sprite.Sprite(resources.engine_image)
+    self.update_engine()
+    self.engine.visible = False
+    self.children.append(self.engine)
 
   def update(self, now, dt):
     if self.keys[KEY.LEFT]:
@@ -96,7 +108,6 @@ class Player(GameObject):
     elif self.keys[KEY.UP]:
       self.engine.visible = True
       direction = pymunk.Vec2d(-math.cos(self.body.angle), -math.sin(self.body.angle))
-      #direction /= direction.length
       self.body.velocity += direction * self.thrust * dt
 
     elif self.keys[KEY.DOWN]:
@@ -109,6 +120,14 @@ class Player(GameObject):
 
     if self.keys[KEY.SPACE]:
       self.fire()
+
+    self.update_engine()
+
+  def update_engine(self):
+    self.engine.rotation = self.rotation
+    self.engine.x = self.x
+    self.engine.y = self.y
+    self.engine.scale = 1.0 + (math.sin(20 * time.time()) / 10)
 
   def fire(self):
     now = time.time()
@@ -166,14 +185,15 @@ def init(game):
       if wrap_around(body):
         game.physics.space.reindex_shapes_for_body(body)
 
-  game.physics.space.damping = 0.8
+  # Damping makes interactions settle down nicely but also causes our asteroids to just "stop" at some point.
+  #game.physics.space.damping = 0.8
   game.post_physics_step = wrap_objects
 
   player = Player(x=max_x / 2, y=max_y / 2)
   game.add_object(player)
 
   for i in range(100):
-    asteroid = Asteroid(x=randint(0, max_x), y=randint(0, max_y))
+    asteroid = Asteroid(x=randint(0, max_x), y=randint(0, max_y), scale=1.0)
     game.add_object(asteroid)
 
     # Nudge them so they move, slightly off center to add spin

@@ -26,8 +26,8 @@ center_image(asteroid_image)
 # The engine flame should not be centered on the ship. Rather, it should be shown 
 # behind it. To achieve this effect, we just set the anchor point outside the
 # image bounds.
-engine_image = pyglet.resource.image("Flame.png")
-engine_image.anchor_x = engine_image.width * 1.5
+engine_image = pyglet.resource.image("Flame@0.1x.png")
+engine_image.anchor_x = engine_image.width * 1.25
 engine_image.anchor_y = engine_image.height / 2
 
 # Load the bullet sound _without_ streaming so we can play it more than once at a time

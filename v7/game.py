@@ -64,6 +64,10 @@ class Game:
     obj.keys = self.keys
     self.physics.add_object(obj)
 
+    # Don't forget to draw the child sprites
+    for child in obj.children:
+      child.batch = self.main_batch
+
   def remove_object(self, obj):
     logging.debug(f'Game.remove_object() obj={obj}')
     self.physics.remove_object(obj)
@@ -100,13 +104,11 @@ class Game:
 
     # Update sprite positions/angles from physics shapes
     for obj in self.physics.objects:
-      logging.debug(f'updating obj {obj}: body.angle={obj.body.angle} pos.x={obj.body.position.x} pos.y={obj.body.position.y}')
+      #logging.debug(f'updating obj {obj}: body.angle={obj.body.angle} pos.x={obj.body.position.x} pos.y={obj.body.position.y}')
       obj.rotation = math.degrees(-obj.body.angle) + 180
       obj.position = obj.body.position
       obj.update(now, dt)
 
-    # spawn new game objects
-    # remove dead game objects
     # detect game win / loss conditions
     # update hud
 
