@@ -1,0 +1,10 @@
+
+Collision category (bitmask) / colliision_type stuff is probably broken.
+Asteroids colide with Asteroids despite us not saying that should hapepn (it should, be we don't say so).
+
+We fixed such that player does not collide with bullets...
+
+Player does bump into asteroids but it doesnt' "collide" in the "run a collision handler" sense, so that is likely because KINEMATIC.
+
+this is probably an ordering issue, we should update() kinematic objects FIRST each frame, then do pymunk tick of dynamic objs
+this way we call reindex_shapes_for_body() right before step()
