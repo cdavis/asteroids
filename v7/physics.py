@@ -4,16 +4,20 @@ import logging
 import pymunk
 
 
+ALL_MASKS = pymunk.ShapeFilter.ALL_MASKS
+
+
 class PhysicsEngineBase:
   """Base Class for physics engine implementations."""
 
   def __init__(self, game, object_classes):
     self.game = game
     self.objects = []
-    self.set_allowed_collisions(object_classes)
+    self.object_classes = object_classes
+    self.init()
 
-  def set_allowed_collisions(self, object_classes):
-    raise NotImplementedError()
+  def init(self):
+    """Subclass-specific initialization"""
 
   def add_object(self, obj):
     if obj in self.objects:
@@ -52,16 +56,13 @@ class CheesyPhysics(PhysicsEngineBase):
 
 class PymunkPhysics(PhysicsEngineBase):
 
-  def set_allowed_collisions(self, obj_classes):
+  def init(self):
     self.space = pymunk.Space()
     self.space.gravity = (0, -self.game.config.gravity)
 
-    for src_class in obj_classes.values():
+    for src_class in self.object_classes.values():
       for dst_class_name in src_class.collides_with:
-        dst_class = obj_classes[dst_class_name]
-
-        # Configure src_class ShapeFilter category
-        src_class.collision_category |= dst_class.collision_type
+        dst_class = self.object_classes[dst_class_name]
 
         # Attach handler function if we have one
         handler = self.space.add_collision_handler(
@@ -75,14 +76,30 @@ class PymunkPhysics(PhysicsEngineBase):
           method = getattr(src_class, method_name, None)
           if method:
             logging.info(f'Collision handler method for {src_class.__name__} to {dst_class.__name__} {phase}')
+            logging.info(f'Handler({src_class.__name__}={src_class.collision_type},{dst_class.__name__}={dst_class.collision_type})')
+            method = self._decorate_collision_handler(method)
             setattr(handler, phase, method)
+
+  def _decorate_collision_handler(self, func):
+
+    def wrapper(*args, **kwargs):
+      logging.info(f'Collision Handler {func.__name__}')
+      return func(*args, **kwargs)
+
+    return wrapper
+
 
   def add_object(self, obj):
     super().add_object(obj)
     self.space.add(obj.body, *obj.shapes.values())
     
-    filter = pymunk.ShapeFilter(categories=obj.collision_category)
-    logging.debug(f'Configuring {obj} with filter={bin(obj.collision_category)}')
+    collision_mask = 0
+    for other_gameobj_class_name in obj.collides_with:
+      other_gameobj_class = self.object_classes[other_gameobj_class_name]
+      collision_mask |= other_gameobj_class.collision_type
+
+    filter = pymunk.ShapeFilter(categories=obj.collision_type, mask=collision_mask)
+    logging.debug(f'Configuring {obj} with filter={filter}')
 
     for shape in obj.shapes.values():
       shape.filter = filter

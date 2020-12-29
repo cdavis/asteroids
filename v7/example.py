@@ -16,14 +16,14 @@ Vec2d = pymunk.Vec2d
 
 class Asteroid(GameObject):
   image = resources.asteroid_image
-  collides_with = ['Bullet', 'Player']
+  collides_with = ['Asteroid', 'Bullet', 'Player']
 
   def create_body(self, mass=1, radius=25, **unused):
     self.circle_body(mass, radius)
 
   @staticmethod
   def collision_Bullet_begin(arbiter, space, data):
-    print(f'Asteroid.collision_Bullet_begin()  arbiter={arbiter} space={space} data={data}')
+    #print(f'Asteroid.collision_Bullet_begin()  arbiter={arbiter} space={space} data={data}')
     asteroid_shape, bullet_shape = arbiter.shapes
     game = data['game']
 
@@ -32,7 +32,7 @@ class Asteroid(GameObject):
       asteroid_obj = game.get_object_from_body(asteroid_shape.body)
       bullet_obj = game.get_object_from_body(bullet_shape.body)
     except KeyError:
-      return
+      return False
 
     radius = asteroid_obj.shapes['body'].radius
 
@@ -56,6 +56,23 @@ class Asteroid(GameObject):
     bullet_obj.delete()
     return True
  
+  @staticmethod
+  def collision_Player_separate(arbiter, space, data):
+    print(f'Asteroid.collision_Player_separate()  arbiter={arbiter} space={space} data={data}')
+    asteroid_shape, player_shape = arbiter.shapes
+    game = data['game']
+
+    # This can fail because pymunk is silly.
+    try:
+      asteroid_obj = game.get_object_from_body(asteroid_shape.body)
+      player_obj = game.get_object_from_body(player_shape.body)
+    except KeyError:
+      return False
+
+    player_obj.delete()
+    assert False, 'i did it! (in Asteroid.collision_Player_separate)'  # XXX
+    return True
+
 
 class Bullet(GameObject):
   image = resources.bullet_image
@@ -148,6 +165,23 @@ class Player(GameObject):
       self.game.add_object(new_bullet)
       self.last_fired = now
 
+  @staticmethod
+  def collision_Asteroid_begin(arbiter, space, data):
+    print(f'Player.collision_Asteroid_begin()  arbiter={arbiter} space={space} data={data}')
+    player_shape, asteroid_shape = arbiter.shapes
+    game = data['game']
+
+    # This can fail because pymunk is silly.
+    try:
+      asteroid_obj = game.get_object_from_body(asteroid_shape.body)
+      player_obj = game.get_object_from_body(player_shape.body)
+    except KeyError:
+      return False
+
+    player_obj.delete()
+    assert False, 'i did it! (in Player.collision_Asteroid_begin)'  # XXX
+    return True
+
 
 def configure(config):
   config.physics = 'pymunk'
@@ -192,7 +226,8 @@ def init(game):
   player = Player(x=max_x / 2, y=max_y / 2)
   game.add_object(player)
 
-  for i in range(100):
+  num_asteroids = 1
+  for i in range(num_asteroids):
     asteroid = Asteroid(x=randint(0, max_x), y=randint(0, max_y), scale=1.0)
     game.add_object(asteroid)
 

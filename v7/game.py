@@ -57,7 +57,7 @@ class Game:
     """Add an object to the game. The object must by a pyglet Sprite that has
     a pymunk .body and .shapes. Maybe something also about collision mask???
     """
-    logging.debug(f'Game.add_object() obj={obj}')
+    #logging.debug(f'Game.add_object() obj={obj}')
     self.object_by_body[obj.body] = obj
     obj.game = self
     obj.batch = self.main_batch
@@ -88,7 +88,7 @@ class Game:
     pyglet.app.run()
 
   def update(self, dt):
-    logging.debug(f'Game.update: dt={int(dt * 1000)}ms')
+    #logging.debug(f'Game.update: dt={int(dt * 1000)}ms')
     now = time.time()
     self.uncomputed_time += dt
 
@@ -97,7 +97,7 @@ class Game:
     # with various delays we have to track uncomputed time explicitly.
     physics_dt = 1 / self.config.fps
     while self.uncomputed_time > physics_dt:
-      logging.debug('physics step')
+      #logging.debug('physics step')
       self.physics.step(physics_dt)
       self.uncomputed_time -= physics_dt
       self.post_physics_step()
@@ -108,6 +108,8 @@ class Game:
       obj.rotation = math.degrees(-obj.body.angle) + 180
       obj.position = obj.body.position
       obj.update(now, dt)
+      if obj.body.body_type == pymunk.Body.KINEMATIC:  #XXX
+        self.physics.space.reindex_shapes_for_body(obj.body)
 
     # detect game win / loss conditions
     # update hud
@@ -116,7 +118,7 @@ class Game:
     """Override this to do whatever you want."""
 
   def on_draw(self):
-    logging.debug('Game.on_draw')
+    #logging.debug('Game.on_draw')
     self.window.clear()
     self.main_batch.draw()
     self.fps_display.draw()

@@ -12,9 +12,8 @@ class CollisionTyped(type):
     new = super().__new__(cls, name, bases, dct)
 
     if name != 'GameObject':
-      new.collision_category = 0
       new.collision_type = 2 ** len(CollisionTyped.__map)
-      print(f'AWESOME NEW POWER OF 2: {name} class collision_type={new.collision_type}')  #XXX
+      print(f'AWESOME NEW POWER OF 2: {name} class collision_type={new.collision_type}')
       assert new.collision_type not in CollisionTyped.__map
       CollisionTyped.__map[new.collision_type] = new
 
