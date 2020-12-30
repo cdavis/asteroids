@@ -23,7 +23,6 @@ class Asteroid(GameObject):
 
   @staticmethod
   def collision_Bullet_begin(arbiter, space, data):
-    #print(f'Asteroid.collision_Bullet_begin()  arbiter={arbiter} space={space} data={data}')
     asteroid_shape, bullet_shape = arbiter.shapes
     game = data['game']
 
@@ -56,23 +55,6 @@ class Asteroid(GameObject):
     bullet_obj.delete()
     return True
  
-  @staticmethod
-  def collision_Player_separate(arbiter, space, data):
-    print(f'Asteroid.collision_Player_separate()  arbiter={arbiter} space={space} data={data}')
-    asteroid_shape, player_shape = arbiter.shapes
-    game = data['game']
-
-    # This can fail because pymunk is silly.
-    try:
-      asteroid_obj = game.get_object_from_body(asteroid_shape.body)
-      player_obj = game.get_object_from_body(player_shape.body)
-    except KeyError:
-      return False
-
-    player_obj.delete()
-    assert False, 'i did it! (in Asteroid.collision_Player_separate)'  # XXX
-    return True
-
 
 class Bullet(GameObject):
   image = resources.bullet_image
@@ -98,6 +80,9 @@ class Player(GameObject):
     self.shapes = {
         'body': pymunk.Circle(self.body, radius),
     }
+    self.shapes['body'].elasticity = 0.8
+    self.shapes['body'].friction = 1.0
+    self.shapes['body'].collision_type = self.collision_type  # Very Important!
 
     # Movement settings
     self.thrust = 400.0
@@ -166,9 +151,10 @@ class Player(GameObject):
       self.last_fired = now
 
   @staticmethod
-  def collision_Asteroid_begin(arbiter, space, data):
-    print(f'Player.collision_Asteroid_begin()  arbiter={arbiter} space={space} data={data}')
-    player_shape, asteroid_shape = arbiter.shapes
+  def collision_Asteroid_separate(arbiter, space, data):
+    logging.info('Player collided with Asteroid')
+    # I have no idea why this is (dst, src) despite everything else begin (src, dst). But it consistently is...
+    asteroid_shape, player_shape = arbiter.shapes
     game = data['game']
 
     # This can fail because pymunk is silly.
@@ -176,10 +162,11 @@ class Player(GameObject):
       asteroid_obj = game.get_object_from_body(asteroid_shape.body)
       player_obj = game.get_object_from_body(player_shape.body)
     except KeyError:
+      logging.warning(f'Failed to lookup player,asteroid objects from shapes={arbiter.shapes}')
       return False
 
+    logging.info('Deleting player object')
     player_obj.delete()
-    assert False, 'i did it! (in Player.collision_Asteroid_begin)'  # XXX
     return True
 
 
@@ -192,8 +179,6 @@ def configure(config):
   config.window_height = None
   config.vsync = True
 
-#XXX player death
-#XXX asteroid death / spawning
 
 def init(game):
   min_x, min_y = 0, 0
@@ -226,7 +211,7 @@ def init(game):
   player = Player(x=max_x / 2, y=max_y / 2)
   game.add_object(player)
 
-  num_asteroids = 1
+  num_asteroids = 100
   for i in range(num_asteroids):
     asteroid = Asteroid(x=randint(0, max_x), y=randint(0, max_y), scale=1.0)
     game.add_object(asteroid)

@@ -101,6 +101,7 @@ class PymunkPhysics(PhysicsEngineBase):
     filter = pymunk.ShapeFilter(categories=obj.collision_type, mask=collision_mask)
     logging.debug(f'Configuring {obj} with filter={filter}')
 
+    # Optimization, comment it out if collides_with ain't right.
     for shape in obj.shapes.values():
       shape.filter = filter
 
