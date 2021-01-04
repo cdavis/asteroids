@@ -108,8 +108,8 @@ class Game:
       obj.rotation = math.degrees(-obj.body.angle) + 180
       obj.position = obj.body.position
       obj.update(now, dt)
-      if obj.body.body_type == pymunk.Body.KINEMATIC:  #XXX
-        self.physics.space.reindex_shapes_for_body(obj.body)
+      #if obj.body.body_type == pymunk.Body.KINEMATIC:  #XXX
+      #  self.physics.space.reindex_shapes_for_body(obj.body)
 
     # detect game win / loss conditions
     # update hud
