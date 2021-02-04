@@ -1,6 +1,6 @@
-This was our first working game in pyglet, our own asteroids implementation based off the `old_junk/v5` example.
-To run it (on windows, using windows python not wsl python) do something like:
+This was our first working pyglet asteroids game built from scratch on our new engine approach after we ditched the v6
+example based on v5.
 
-  python3 basic.py example
+Run with:
 
-The game engine in this version is called basic.py and the asteroids game module is example.py, specified here just as 'example'.
+  python3 game.py example

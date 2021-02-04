@@ -2,6 +2,7 @@
 import logging
 import math
 from random import random, randint
+import time
 
 import pyglet
 import pymunk
@@ -15,34 +16,57 @@ Vec2d = pymunk.Vec2d
 
 class Asteroid(GameObject):
   image = resources.asteroid_image
-  collides_with = ['Bullet', 'Player', 'Floor']
+  collides_with = ['Asteroid', 'Bullet', 'Player']
 
   def create_body(self, mass=1, radius=25, **unused):
     self.circle_body(mass, radius)
 
   @staticmethod
   def collision_Bullet_begin(arbiter, space, data):
-    print(f'Asteroid.collision_Bullet_begin()  arbiter={arbiter} space={space} data={data}')
-    return True
+    asteroid_shape, bullet_shape = arbiter.shapes
+    game = data['game']
 
-  @staticmethod
-  def collision_Player_begin(arbiter, space, data):
-    print(f'xAsteroid.collision_Player_begin()  arbiter={arbiter} space={space} data={data}')
-    return True
+    # This can fail because pymunk is silly.
+    try:
+      asteroid_obj = game.get_object_from_body(asteroid_shape.body)
+      bullet_obj = game.get_object_from_body(bullet_shape.body)
+    except KeyError:
+      return False
 
-  @staticmethod
-  def collision_Floor_begin(arbiter, space, data):
-    print(f'Asteroid.collision_Floor_begin()  arbiter={arbiter} space={space} data={data}')
-    return True
+    radius = asteroid_obj.shapes['body'].radius
 
+    # Create new sub-asteroids by sweeping our 'clock hand' vector vec around.
+    angle = 0.0
+    num_subs = 2
+
+    if asteroid_obj.scale > 0.5:
+      for i in range(num_subs):
+        vec = pymunk.Vec2d(-math.cos(angle), -math.sin(angle))
+        vec *= radius
+        sub_asteroid = Asteroid(
+            x=vec.x + asteroid_obj.x,
+            y=vec.y + asteroid_obj.y,
+        )
+        sub_asteroid.scale = asteroid_obj.scale * 0.7
+        game.add_object(sub_asteroid)
+        angle += math.pi * 2 / num_subs
+
+    asteroid_obj.delete()
+    bullet_obj.delete()
+    return True
+ 
 
 class Bullet(GameObject):
   image = resources.bullet_image
   collides_with = ['Asteroid']
 
-  def create_body(self, mass=1.0, radius=4, **unused):
+  def create_body(self, mass=1.0, radius=4, lifespan=0.5, **unused):
+    self.expiration_time = time.time() + lifespan
     self.circle_body(mass, radius)
 
+  def update(self, now, dt):
+    if now > self.expiration_time:
+      self.delete()
 
 
 class Player(GameObject):
@@ -56,23 +80,27 @@ class Player(GameObject):
     self.shapes = {
         'body': pymunk.Circle(self.body, radius),
     }
-
-    # Child sprite for the engine flame
-    self.engine = pyglet.sprite.Sprite(resources.engine_image)
-    self.engine.visible = False
-    # XXX pyglet has to know to draw it, in the batch, etc. pymunk dont care. i dont care.
-    # XXX Ah yes this is physics.objects not space.bodies... that is where the sprite drawing loop draws from (so maybe
-    # I need to have it also look at obj.children ?
+    self.shapes['body'].elasticity = 0.8
+    self.shapes['body'].friction = 1.0
+    self.shapes['body'].collision_type = self.collision_type  # Very Important!
 
     # Movement settings
     self.thrust = 400.0
     self.rotate_speed = 3.0
-    self.bullet_speed = 5.0
+    self.bullet_speed = 1000.0
+    self.bullet_delay = 0.1
     self.brake_damping = 0.03
     self.min_velocity = 50.0
     self.max_velocity = 600.0
+    self.last_fired = 0.0
 
-  def update(self, dt):
+    # Child sprite for the engine flame
+    self.engine = pyglet.sprite.Sprite(resources.engine_image)
+    self.update_engine()
+    self.engine.visible = False
+    self.children.append(self.engine)
+
+  def update(self, now, dt):
     if self.keys[KEY.LEFT]:
       self.body.angle += self.rotate_speed * dt
 
@@ -81,10 +109,8 @@ class Player(GameObject):
 
     elif self.keys[KEY.UP]:
       self.engine.visible = True
-      if self.body.velocity.length < self.max_velocity: # XXX gas stops working when we're at top speed, so can't even turn!!!
-        direction = pymunk.Vec2d(-math.cos(self.body.angle), -math.sin(self.body.angle))
-        direction /= direction.length
-        self.body.velocity += direction * self.thrust * dt
+      direction = pymunk.Vec2d(-math.cos(self.body.angle), -math.sin(self.body.angle))
+      self.body.velocity += direction * self.thrust * dt
 
     elif self.keys[KEY.DOWN]:
       self.body.velocity *= 1 - self.brake_damping
@@ -94,27 +120,53 @@ class Player(GameObject):
     if not self.keys[KEY.UP]:
       self.engine.visible = False
 
+    if self.keys[KEY.SPACE]:
+      self.fire()
 
-class Floor(GameObject):
-  image = resources.bullet_image
-  collides_with = ['Asteroid', 'Player']
+    self.update_engine()
 
-  def create_body(self, **kwargs):
-    logging.info(f'Floor.create_body() kwargs={kwargs}')
-    a = (-1000, 0)
-    b = (1000, 0)
-    radius = 10
-    self.body = pymunk.Body(body_type=pymunk.Body.STATIC)
-    self.body.position = (self.x, self.y)
-    self.shapes = {
-        'body': pymunk.Segment(self.body, a, b, radius),
-    }
-    self.shapes['body'].elasticity = 0.8
-    self.shapes['body'].friction = 1.0
+  def update_engine(self):
+    self.engine.rotation = self.rotation
+    self.engine.x = self.x
+    self.engine.y = self.y
+    self.engine.scale = 1.0 + (math.sin(20 * time.time()) / 10)
+
+  def fire(self):
+    now = time.time()
+    if now - self.last_fired > self.bullet_delay:
+      # Pyglet uses negative degrees
+      angle_radians = -math.radians(self.rotation)
+
+      # Create bullet in front of the ship
+      ship_radius = self.image.width / 2
+      bullet_x = self.x + math.cos(angle_radians) * ship_radius
+      bullet_y = self.y + math.sin(angle_radians) * ship_radius
+      new_bullet = Bullet(x=bullet_x, y=bullet_y)
+
+      # Give it some speed
+      direction = pymunk.Vec2d(-math.cos(self.body.angle), -math.sin(self.body.angle))
+      new_bullet.body.velocity = direction * self.bullet_speed
+
+      self.game.add_object(new_bullet)
+      self.last_fired = now
 
   @staticmethod
-  def collision_Asteroid_begin(arbiter, space, data):
-    logging.info(f'Floor.collision_Asteroid_begin() arbiter.friction={arbiter.friction}')
+  def collision_Asteroid_separate(arbiter, space, data):
+    logging.info('Player collided with Asteroid')
+    # I have no idea why this is (dst, src) despite everything else begin (src, dst). But it consistently is...
+    asteroid_shape, player_shape = arbiter.shapes
+    game = data['game']
+
+    # This can fail because pymunk is silly.
+    try:
+      asteroid_obj = game.get_object_from_body(asteroid_shape.body)
+      player_obj = game.get_object_from_body(player_shape.body)
+    except KeyError:
+      logging.warning(f'Failed to lookup player,asteroid objects from shapes={arbiter.shapes}')
+      return False
+
+    logging.info('Deleting player object')
+    player_obj.delete()
     return True
 
 
@@ -127,9 +179,6 @@ def configure(config):
   config.window_height = None
   config.vsync = True
 
-#XXX player death
-#XXX bullet spawning
-#XXX asteroid death / spawning
 
 def init(game):
   min_x, min_y = 0, 0
@@ -155,17 +204,16 @@ def init(game):
       if wrap_around(body):
         game.physics.space.reindex_shapes_for_body(body)
 
-  game.physics.space.damping = 0.8
+  # Damping makes interactions settle down nicely but also causes our asteroids to just "stop" at some point.
+  #game.physics.space.damping = 0.8
   game.post_physics_step = wrap_objects
 
   player = Player(x=max_x / 2, y=max_y / 2)
   game.add_object(player)
 
-  floor = Floor(x=max_x / 2, y=10)
-  game.add_object(floor)
-
-  for i in range(100):
-    asteroid = Asteroid(x=randint(0, max_x), y=randint(0, max_y))
+  num_asteroids = 100
+  for i in range(num_asteroids):
+    asteroid = Asteroid(x=randint(0, max_x), y=randint(0, max_y), scale=1.0)
     game.add_object(asteroid)
 
     # Nudge them so they move, slightly off center to add spin
