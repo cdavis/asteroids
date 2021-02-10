@@ -14,6 +14,9 @@ pyglet.resource.reindex()
 bullet_image = pyglet.resource.image("bullet.png")
 center_image(bullet_image)
 
+floor_image = pyglet.resource.image("lotsapixels.png")
+#floor_image = pyglet.resource.image("bullet.png")
+center_image(floor_image)
 
 '''
 

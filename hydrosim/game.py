@@ -42,6 +42,7 @@ class Game:
         vsync=config.vsync)
 
     self.fps_display = pyglet.window.FPSDisplay(window=self.window)
+    self.bg_batch = pyglet.graphics.Batch()
     self.main_batch = pyglet.graphics.Batch()
     self.keys = pyglet.window.key.KeyStateHandler()
     self.window.push_handlers(self, self.keys)
@@ -53,16 +54,17 @@ class Game:
 
     self.module.init(self)
 
-  def add_object(self, obj):
+  def add_object(self, obj, background=False):
     """Add an object to the game. The object must by a pyglet Sprite that has
     a pymunk .body and .shapes. Maybe something also about collision mask???
     """
     #logging.debug(f'Game.add_object() obj={obj}')
     self.object_by_body[obj.body] = obj
     obj.game = self
-    obj.batch = self.main_batch
+    obj.batch = self.bg_batch if background else self.main_batch
     obj.keys = self.keys
-    self.physics.add_object(obj)
+    if not background:
+      self.physics.add_object(obj)
 
     # Don't forget to draw the child sprites
     for child in obj.children:
@@ -120,6 +122,7 @@ class Game:
   def on_draw(self):
     #logging.debug('Game.on_draw')
     self.window.clear()
+    self.bg_batch.draw()
     self.main_batch.draw()
     self.fps_display.draw()
 

@@ -58,7 +58,7 @@ def build_config(args=None):
       choices=sorted(resources.SONGS),
       help='Select your jam.')
 
-  args = args or sys.argv
+  args = args or sys.argv[1:]
   config = parser.parse_args(args)
 
   # Validate the config is good before returning it, raise useful error message.

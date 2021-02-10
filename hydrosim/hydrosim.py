@@ -16,45 +16,36 @@ Vec2d = pymunk.Vec2d
 
 class Drop(GameObject):
   image = resources.bullet_image
-  collides_with = ['Drop']
+  collides_with = ['Drop', 'Floor']
 
-  def create_body(self, mass=1, radius=1, **unused):
+  def create_body(self, mass=1, radius=4, **unused):
     self.circle_body(mass, radius)
 
-  @staticmethod
-  def collision_Bullet_begin(arbiter, space, data):
-    asteroid_shape, bullet_shape = arbiter.shapes
-    game = data['game']
 
-    # This can fail because pymunk is silly.
-    try:
-      asteroid_obj = game.get_object_from_body(asteroid_shape.body)
-      bullet_obj = game.get_object_from_body(bullet_shape.body)
-    except KeyError:
-      return False
+class Floor(GameObject):
+  image = resources.floor_image
+  collides_with = ['Drop']
 
-    radius = asteroid_obj.shapes['body'].radius
+  def create_body(self, width=250, height=40, a_tilt=0, **unused):
+    self.body = pymunk.Body(body_type=pymunk.Body.STATIC)
+    self.body.position = (self.x, self.y)
+    a = (-width / 2, a_tilt)
+    b = (width / 2, -a_tilt)
+    radius = height / 2
+    self.shapes = {
+        'body': pymunk.Segment(self.body, a, b, radius),
+    }
+    self.shapes['body'].elasticity = 0.8
+    self.shapes['body'].friction = 1.0
 
-    # Create new sub-asteroids by sweeping our 'clock hand' vector vec around.
-    angle = 0.0
-    num_subs = 2
+  def draw_shapes(self):
+    # Since we have no image, draw the body shapes
+    self.line = pyglet.shapes.Line(a,b,c,d,
+        width=15,
+        color=(255, 40, 60),
+        batch=self.batch,
+    )
 
-    if asteroid_obj.scale > 0.5:
-      for i in range(num_subs):
-        vec = pymunk.Vec2d(-math.cos(angle), -math.sin(angle))
-        vec *= radius
-        sub_asteroid = Asteroid(
-            x=vec.x + asteroid_obj.x,
-            y=vec.y + asteroid_obj.y,
-        )
-        sub_asteroid.scale = asteroid_obj.scale * 0.7
-        game.add_object(sub_asteroid)
-        angle += math.pi * 2 / num_subs
-
-    asteroid_obj.delete()
-    bullet_obj.delete()
-    return True
- 
 
 def configure(config):
   config.physics = 'pymunk'
@@ -71,10 +62,10 @@ def update(game):
   max_x, max_y = game.window.get_size()
 
   max_drops = 100
-  drops_per_second = 2
+  drops_per_second = 20
   seconds_per_drop = 1 / drops_per_second
   drop_spawn = (1000, 500)
-  drop_scale = 1.0
+  drop_scale = 50.0
 
   # Drop spawner
   if time.time() - game.last_drop > seconds_per_drop:
@@ -95,6 +86,15 @@ def init(game):
   # Game state for our update() method
   game.last_drop = time.time()
   game.drops = []
+
+  # Set background RGBA
+  pyglet.gl.glClearColor(255, 255, 255, 255)
+
+  # Throw in a floor or two
+  floor1 = Floor(x=1000, y=250, a_tilt=25)
+  floor2 = Floor(x=1000, y=250, a_tilt=-25)
+  game.add_object(floor1)
+  game.add_object(floor2)
 
   # Damping makes interactions settle down nicely but also causes our asteroids to just "stop" at some point.
   #game.physics.space.damping = 0.8
