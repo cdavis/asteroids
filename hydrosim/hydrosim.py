@@ -23,14 +23,15 @@ class Drop(GameObject):
 
 
 class Floor(GameObject):
-  image = resources.floor_image
+  image = resources.bullet_image
   collides_with = ['Drop']
 
-  def create_body(self, width=250, height=40, a_tilt=0, **unused):
+  def create_body(self, width=250, height=40, rotate=0, batch=None, **unused):
+    assert batch
     self.body = pymunk.Body(body_type=pymunk.Body.STATIC)
     self.body.position = (self.x, self.y)
-    a = (-width / 2, a_tilt)
-    b = (width / 2, -a_tilt)
+    a = (-width / 2, 0)
+    b = (width / 2, 0)
     radius = height / 2
     self.shapes = {
         'body': pymunk.Segment(self.body, a, b, radius),
@@ -38,13 +39,21 @@ class Floor(GameObject):
     self.shapes['body'].elasticity = 0.8
     self.shapes['body'].friction = 1.0
 
-  def draw_shapes(self):
-    # Since we have no image, draw the body shapes
-    self.line = pyglet.shapes.Line(a,b,c,d,
-        width=15,
-        color=(255, 40, 60),
-        batch=self.batch,
+    self.body.angle += rotate
+
+    # Draw our own visual instead of self.image
+    self.rect = pyglet.shapes.Rectangle(
+        x=self.x,
+        y=self.y,
+        width=width,
+        height=height,
+        color=(55, 55, 255),
+        batch=batch,
     )
+    self.rect.anchor_position = (width / 2, height / 2)
+
+  def update(self, now, dt):
+    self.rect.rotation = math.degrees(-self.body.angle) + 180
 
 
 def configure(config):
@@ -90,11 +99,16 @@ def init(game):
   # Set background RGBA
   pyglet.gl.glClearColor(255, 255, 255, 255)
 
+  screen_width, screen_height = game.window.get_size()
+  center_x = screen_width / 2
+
   # Throw in a floor or two
-  floor1 = Floor(x=1000, y=250, a_tilt=25)
-  floor2 = Floor(x=1000, y=250, a_tilt=-25)
+  floor1 = Floor(x=1000, y=250, rotate=10, batch=game.main_batch)
+  floor2 = Floor(x=1000, y=250, rotate=-10, batch=game.main_batch)
+  mega_floor = Floor(x=center_x, y=1, width=screen_width, batch=game.main_batch)
   game.add_object(floor1)
   game.add_object(floor2)
+  game.add_object(mega_floor)
 
   # Damping makes interactions settle down nicely but also causes our asteroids to just "stop" at some point.
   #game.physics.space.damping = 0.8
