@@ -1,4 +1,5 @@
 
+import functools
 import logging
 import math
 from random import random, randint
@@ -11,6 +12,8 @@ from objects import GameObject
 import resources
 
 KEY = pyglet.window.key
+MOUSE = pyglet.window.mouse
+ALL_MASKS = pymunk.ShapeFilter.ALL_MASKS
 Vec2d = pymunk.Vec2d
 
 
@@ -25,6 +28,7 @@ class Drop(GameObject):
 class Floor(GameObject):
   image = resources.bullet_image
   collides_with = ['Drop']
+  shape_to_obj = {}  # Map pymunk 'body' shape Segments to their owning Floor object
 
   def create_body(self, width=250, height=40, rotate=0, batch=None, **unused):
     assert batch
@@ -38,6 +42,7 @@ class Floor(GameObject):
     }
     self.shapes['body'].elasticity = 0.8
     self.shapes['body'].friction = 1.0
+    self.shape_to_obj[self.shapes['body']] = self
 
     self.body.angle += rotate
 
@@ -54,6 +59,12 @@ class Floor(GameObject):
 
   def update(self, now, dt):
     self.rect.rotation = math.degrees(-self.body.angle) + 180
+
+  def cleanup(self):
+    # Called when we get deleted, remove our entry from our shape_to_obj tracking map
+    for shape, obj in list(self.shape_to_obj.items()):
+      if obj is self:
+        del self.shape_to_obj[shape]
 
 
 def configure(config):
@@ -92,7 +103,23 @@ def update(game):
       game.drops.remove(drop)
 
   game.obj_count_update()
- 
+
+
+def on_mouse_press(game, x, y, button, modifiers):
+  #print(f'on_mouse_press(x={x}, y={y}, button={button}, modifiers={modifiers})')
+  if button == MOUSE.LEFT:
+    floor = Floor(x=x, y=y, rotate=(30 * random()) - 15, batch=game.main_batch)
+    game.add_object(floor)
+  elif button == MOUSE.RIGHT:
+    point = (x, y)
+    info = game.physics.space.point_query_nearest(
+      point,
+      max_distance=250,
+      shape_filter=pymunk.ShapeFilter(categories=ALL_MASKS ^ Floor.collision_type),
+    )
+    if info and info.shape and info.shape in Floor.shape_to_obj:
+      Floor.shape_to_obj[info.shape].delete()
+
 
 def init(game):
   # Game state for our update() method
@@ -100,6 +127,9 @@ def init(game):
   game.drops = []
   screen_width, screen_height = game.window.get_size()
   center_x = screen_width / 2
+
+  # Setup event handling
+  game.window.on_mouse_press = functools.partial(on_mouse_press, game)
 
   # Set background RGBA
   pyglet.gl.glClearColor(255, 255, 255, 255)
@@ -131,5 +161,5 @@ def init(game):
   # Damping makes interactions settle down nicely but also causes our asteroids to just "stop" at some point.
   #game.physics.space.damping = 0.8
   game.post_physics_step = lambda: update(game)
-
+  game.window.set_mouse_visible(True)
   game.play_song('stuff', loop=True)

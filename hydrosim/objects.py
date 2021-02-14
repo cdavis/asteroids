@@ -83,3 +83,7 @@ class GameObject(pyglet.sprite.Sprite, metaclass=CollisionTyped):
   def delete(self):
     logging.debug(f'GameObject.delete() self={self}')
     self.game.remove_object(self)
+
+  def cleanup(self):
+      """Do any last-minute custom cleanup behaviors for deleted objects."""
+      pass

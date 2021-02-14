@@ -45,7 +45,8 @@ class Game:
     self.bg_batch = pyglet.graphics.Batch()
     self.main_batch = pyglet.graphics.Batch()
     self.keys = pyglet.window.key.KeyStateHandler()
-    self.window.push_handlers(self, self.keys)
+    self.mousebuttons = pyglet.window.mouse.MouseStateHandler()
+    self.window.push_handlers(self, self.keys, self.mousebuttons)
     self.player = pyglet.media.Player()
 
     # Keep track of how far real time is ahead of our physics so we can catch
@@ -74,6 +75,7 @@ class Game:
     logging.debug(f'Game.remove_object() obj={obj}')
     self.physics.remove_object(obj)
     del self.object_by_body[obj.body]
+    obj.cleanup()
 
   def get_object_from_body(self, body):
     return self.object_by_body[body]
