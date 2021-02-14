@@ -70,7 +70,7 @@ def update(game):
   min_x, min_y = 0, 0
   max_x, max_y = game.window.get_size()
 
-  max_drops = 100
+  max_drops = 2000
   drops_per_second = 20
   seconds_per_drop = 1 / drops_per_second
   drop_spawn = (1000, 500)
@@ -83,24 +83,42 @@ def update(game):
     if len(game.drops) < max_drops:
       drop = Drop(x=drop_spawn[0], y=drop_spawn[1], scale=drop_scale)
       game.add_object(drop)
+      game.drops.append(drop)
 
   # Delete fallen drops
   for drop in list(game.drops):
     if drop.body.position[1] > max_y:
       drop.delete()
       game.drops.remove(drop)
+
+  game.obj_count_update()
  
 
 def init(game):
   # Game state for our update() method
   game.last_drop = time.time()
   game.drops = []
+  screen_width, screen_height = game.window.get_size()
+  center_x = screen_width / 2
 
   # Set background RGBA
   pyglet.gl.glClearColor(255, 255, 255, 255)
 
-  screen_width, screen_height = game.window.get_size()
-  center_x = screen_width / 2
+  # Object counter
+  text_opts = {
+      'font_name': 'Courier New',
+      'font_size': 16,
+      'color': (80, 80, 120, 255),
+      'x': screen_width - 200,
+      'y': screen_height - 40,
+      'batch': game.main_batch,
+  }
+  obj_count_label = pyglet.text.Label("Objects: 0", **text_opts)
+
+  def obj_count_update():
+    obj_count_label.text = f"objects: {len(game.drops)}"
+
+  game.obj_count_update = obj_count_update
 
   # Throw in a floor or two
   floor1 = Floor(x=1000, y=250, rotate=10, batch=game.main_batch)
