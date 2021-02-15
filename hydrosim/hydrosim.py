@@ -30,7 +30,7 @@ class Floor(GameObject):
   collides_with = ['Drop']
   shape_to_obj = {}  # Map pymunk 'body' shape Segments to their owning Floor object
 
-  def create_body(self, width=250, height=40, rotate=0, batch=None, **unused):
+  def create_body(self, width=250, height=40, rotate=0, batch=None, color=(55, 55, 255), **unused):
     assert batch
     self.body = pymunk.Body(body_type=pymunk.Body.STATIC)
     self.body.position = (self.x, self.y)
@@ -52,7 +52,7 @@ class Floor(GameObject):
         y=self.y,
         width=width,
         height=height,
-        color=(55, 55, 255),
+        color=color,
         batch=batch,
     )
     self.rect.anchor_position = (width / 2, height / 2)
@@ -98,7 +98,8 @@ def update(game):
 
   # Delete fallen drops
   for drop in list(game.drops):
-    if drop.body.position[1] > max_y:
+    x, y = drop.body.position
+    if y < 0 or y > max_y or x < 0 or x > max_x:
       drop.delete()
       game.drops.remove(drop)
 
@@ -153,7 +154,7 @@ def init(game):
   # Throw in a floor or two
   floor1 = Floor(x=1000, y=250, rotate=10, batch=game.main_batch)
   floor2 = Floor(x=1000, y=250, rotate=-10, batch=game.main_batch)
-  mega_floor = Floor(x=center_x, y=1, width=screen_width, batch=game.main_batch)
+  mega_floor = Floor(x=center_x, y=1, width=screen_width, batch=game.main_batch, color=(0, 255, 0))
   game.add_object(floor1)
   game.add_object(floor2)
   game.add_object(mega_floor)
