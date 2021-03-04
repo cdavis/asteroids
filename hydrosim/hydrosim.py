@@ -12,9 +12,11 @@ from objects import GameObject
 import resources
 
 KEY = pyglet.window.key
+KEYS = KEY.KeyStateHandler()
 MOUSE = pyglet.window.mouse
 ALL_MASKS = pymunk.ShapeFilter.ALL_MASKS
 Vec2d = pymunk.Vec2d
+PI = math.pi
 
 
 class Drop(GameObject):
@@ -41,7 +43,7 @@ class Floor(GameObject):
         'body': pymunk.Segment(self.body, a, b, radius),
     }
     self.shapes['body'].elasticity = 0.8
-    self.shapes['body'].friction = 1.0
+    self.shapes['body'].friction = 0.8
     self.shape_to_obj[self.shapes['body']] = self
 
     self.body.angle += rotate
@@ -81,8 +83,8 @@ def update(game):
   min_x, min_y = 0, 0
   max_x, max_y = game.window.get_size()
 
-  max_drops = 2000
-  drops_per_second = 20
+  max_drops = 1000
+  drops_per_second = 200
   seconds_per_drop = 1 / drops_per_second
   drop_spawn = (1000, 500)
   drop_scale = 50.0
@@ -122,15 +124,47 @@ def on_mouse_press(game, x, y, button, modifiers):
       Floor.shape_to_obj[info.shape].delete()
 
 
+def on_key_press(game, symbol, modifiers):  # Basic, one direction at a time
+  current_magnitude = 900  #XXX
+
+  if symbol == KEY.LEFT:
+    game.physics.space.gravity = (current_magnitude, 0)
+  elif symbol == KEY.RIGHT:
+    game.physics.space.gravity = (-current_magnitude, 0)
+  elif symbol == KEY.UP:
+    game.physics.space.gravity = (0, -current_magnitude)
+  elif symbol == KEY.DOWN:
+    game.physics.space.gravity = (0, current_magnitude)
+
+
+def on_key_press2(game, symbol, modifiers):  # Toggle gravity in each direction
+  current = list(game.physics.space.gravity)
+
+  if symbol == KEY.LEFT:
+    current[0] = 0 if current[0] else -900
+  elif symbol == KEY.RIGHT:
+    current[0] = 0 if current[0] else 900
+  elif symbol == KEY.UP:
+    current[1] = 0 if current[1] else -900
+  elif symbol == KEY.DOWN:
+    current[1] = 0 if current[1] else 900
+  else:
+    return
+
+  game.physics.space.gravity = current
+
+
 def init(game):
   # Game state for our update() method
   game.last_drop = time.time()
   game.drops = []
   screen_width, screen_height = game.window.get_size()
   center_x = screen_width / 2
+  center_y = screen_height / 2
 
   # Setup event handling
   game.window.on_mouse_press = functools.partial(on_mouse_press, game)
+  game.window.on_key_press = functools.partial(on_key_press, game)
 
   # Set background RGBA
   pyglet.gl.glClearColor(255, 255, 255, 255)
@@ -154,10 +188,19 @@ def init(game):
   # Throw in a floor or two
   floor1 = Floor(x=1000, y=250, rotate=10, batch=game.main_batch)
   floor2 = Floor(x=1000, y=250, rotate=-10, batch=game.main_batch)
-  mega_floor = Floor(x=center_x, y=1, width=screen_width, batch=game.main_batch, color=(0, 255, 0))
   game.add_object(floor1)
   game.add_object(floor2)
+
+  mega_floor = Floor(x=center_x, y=1, width=screen_width, batch=game.main_batch, color=(0, 255, 0))
   game.add_object(mega_floor)
+  mega_floor2 = Floor(x=center_x, y=screen_height, width=screen_width, batch=game.main_batch, color=(0, 255, 0))
+  game.add_object(mega_floor2)
+  mega_floor3 = Floor(x=screen_width, y=center_y, width=screen_width, batch=game.main_batch, color=(0, 255, 0), rotate=PI/4)
+  game.add_object(mega_floor3)
+  mega_floor4 = Floor(x=1, y=center_y, width=screen_width, batch=game.main_batch, color=(0, 255, 0), rotate=-PI/4)
+  game.add_object(mega_floor4)
+
+
 
   # Damping makes interactions settle down nicely but also causes our asteroids to just "stop" at some point.
   #game.physics.space.damping = 0.8
