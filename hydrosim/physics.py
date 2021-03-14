@@ -83,7 +83,7 @@ class PymunkPhysics(PhysicsEngineBase):
   def _decorate_collision_handler(self, func):
 
     def wrapper(*args, **kwargs):
-      logging.info(f'Executing Collision Handler {func.__name__}')
+      #logging.info(f'Executing Collision Handler {func.__name__}')
       return func(*args, **kwargs)
 
     return wrapper

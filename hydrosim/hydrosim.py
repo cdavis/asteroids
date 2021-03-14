@@ -51,9 +51,18 @@ class Floor(GameObject):
   collides_with = ['Drop']
   shape_to_obj = {}  # Map pymunk 'body' shape Segments to their owning Floor object
 
-  def create_body(self, width=250, height=40, rotate=0, batch=None, color=(55, 55, 255), is_goal=False, **unused):
+  def create_body(
+      self,
+      width=250,
+      height=40,
+      rotate=0,
+      batch=None,
+      color=(55, 55, 255),
+      is_goal=False,
+      body_type=pymunk.Body.STATIC,
+      **unused):
     assert batch
-    self.body = pymunk.Body(body_type=pymunk.Body.STATIC)
+    self.body = pymunk.Body(body_type=body_type)
     self.body.position = (self.x, self.y)
     a = (-width / 2, 0)
     b = (width / 2, 0)
@@ -145,6 +154,12 @@ def on_mouse_press(game, x, y, button, modifiers):
       Floor.shape_to_obj[info.shape].delete()
 
 
+def on_mouse_motion(game, x, y, dx, dy):
+  if game.cursor_obj:
+    game.cursor_obj.body.position = (x, y)
+    game.cursor_obj.rect.position = (x, y)
+
+
 def on_key_press(game, symbol, modifiers):  # Basic, one direction at a time
   current_magnitude = 900  #XXX
 
@@ -176,19 +191,25 @@ def on_key_press2(game, symbol, modifiers):  # Toggle gravity in each direction
 
 
 def init(game):
+  # Set background RGBA
+  pyglet.gl.glClearColor(255, 255, 255, 255)
+
   # Game state for our update() method
   game.last_drop = time.time()
   game.drops = []
   screen_width, screen_height = game.window.get_size()
   center_x = screen_width / 2
   center_y = screen_height / 2
+  game.cursor_obj = None
+
+  if game.config.cursor:
+    game.cursor_obj = Floor(x=0, y=0, rotate=0, height=200, batch=game.main_batch, body_type=pymunk.Body.KINEMATIC)
+    game.add_object(game.cursor_obj)
 
   # Setup event handling
   game.window.on_mouse_press = functools.partial(on_mouse_press, game)
+  game.window.on_mouse_motion = functools.partial(on_mouse_motion, game)
   game.window.on_key_press = functools.partial(on_key_press, game)
-
-  # Set background RGBA
-  pyglet.gl.glClearColor(255, 255, 255, 255)
 
   # Object counter
   text_opts = {

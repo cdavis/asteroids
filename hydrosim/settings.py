@@ -22,6 +22,12 @@ def build_config(args=None):
       help='Name of game module (excluding .py) to play')
 
   parser.add_argument(
+      '--cursor',
+      action='store_true',
+      help='Your mouse is a cube.'
+  )
+
+  parser.add_argument(
       '--fps',
       type=int,
       default=60,
