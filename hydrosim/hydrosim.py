@@ -26,13 +26,32 @@ class Drop(GameObject):
   def create_body(self, mass=1, radius=4, **unused):
     self.circle_body(mass, radius)
 
+  @staticmethod
+  def collision_Floor_begin(arbiter, space, data):
+    drop_shape, floor_shape = arbiter.shapes
+    game = data['game']
+
+    # This can fail because pymunk is silly.
+    try:
+      drop_obj = game.get_object_from_body(drop_shape.body)
+      floor_obj = game.get_object_from_body(floor_shape.body)
+    except KeyError:
+      return False
+
+    if floor_obj.is_goal:
+      drop_obj.delete()
+      if drop_obj in game.drops:
+        game.drops.remove(drop_obj)
+
+    return True
+
 
 class Floor(GameObject):
   image = resources.bullet_image
   collides_with = ['Drop']
   shape_to_obj = {}  # Map pymunk 'body' shape Segments to their owning Floor object
 
-  def create_body(self, width=250, height=40, rotate=0, batch=None, color=(55, 55, 255), **unused):
+  def create_body(self, width=250, height=40, rotate=0, batch=None, color=(55, 55, 255), is_goal=False, **unused):
     assert batch
     self.body = pymunk.Body(body_type=pymunk.Body.STATIC)
     self.body.position = (self.x, self.y)
@@ -44,6 +63,7 @@ class Floor(GameObject):
     }
     self.shapes['body'].elasticity = 0.8
     self.shapes['body'].friction = 0.8
+    self.shapes['body'].collision_type = self.collision_type  # Very important!
     self.shape_to_obj[self.shapes['body']] = self
 
     self.body.angle += rotate
@@ -54,10 +74,11 @@ class Floor(GameObject):
         y=self.y,
         width=width,
         height=height,
-        color=color,
+        color=color if not is_goal else (255, 255, 55),
         batch=batch,
     )
     self.rect.anchor_position = (width / 2, height / 2)
+    self.is_goal = is_goal
 
   def update(self, now, dt):
     self.rect.rotation = math.degrees(-self.body.angle) + 180
@@ -110,8 +131,8 @@ def update(game):
 
 def on_mouse_press(game, x, y, button, modifiers):
   #print(f'on_mouse_press(x={x}, y={y}, button={button}, modifiers={modifiers})')
-  if button == MOUSE.LEFT:
-    floor = Floor(x=x, y=y, rotate=(30 * random()) - 15, batch=game.main_batch)
+  if button in (MOUSE.LEFT, MOUSE.MIDDLE):
+    floor = Floor(x=x, y=y, rotate=(30 * random()) - 15, batch=game.main_batch, is_goal=button == MOUSE.MIDDLE)
     game.add_object(floor)
   elif button == MOUSE.RIGHT:
     point = (x, y)
@@ -186,11 +207,12 @@ def init(game):
   game.obj_count_update = obj_count_update
 
   # Throw in a floor or two
-  floor1 = Floor(x=1000, y=250, rotate=10, batch=game.main_batch)
-  floor2 = Floor(x=1000, y=250, rotate=-10, batch=game.main_batch)
+  floor1 = Floor(x=1000, y=500, rotate=10, batch=game.main_batch)
+  floor2 = Floor(x=1000, y=500, rotate=-10, batch=game.main_batch)
   game.add_object(floor1)
   game.add_object(floor2)
 
+  # Big green floor dealies
   mega_floor = Floor(x=center_x, y=1, width=screen_width, batch=game.main_batch, color=(0, 255, 0))
   game.add_object(mega_floor)
   mega_floor2 = Floor(x=center_x, y=screen_height, width=screen_width, batch=game.main_batch, color=(0, 255, 0))
@@ -200,7 +222,9 @@ def init(game):
   mega_floor4 = Floor(x=1, y=center_y, width=screen_width, batch=game.main_batch, color=(0, 255, 0), rotate=-PI/4)
   game.add_object(mega_floor4)
 
-
+  # GOOOOOOOAAAAAL
+  goal = Floor(x=1300, y=250, batch=game.main_batch, is_goal=True)
+  game.add_object(goal)
 
   # Damping makes interactions settle down nicely but also causes our asteroids to just "stop" at some point.
   #game.physics.space.damping = 0.8
