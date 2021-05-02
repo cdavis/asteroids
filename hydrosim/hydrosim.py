@@ -102,10 +102,10 @@ class Floor(GameObject):
 def configure(config):
   config.physics = 'pymunk'
   config.fps = 120
-  config.fullscreen = True
+  #config.fullscreen = True
   config.window_width = None
   config.window_height = None
-  config.vsync = True
+  #config.vsync = True
 
 
 def update(game):
@@ -148,7 +148,7 @@ def on_mouse_press(game, x, y, button, modifiers):
     info = game.physics.space.point_query_nearest(
       point,
       max_distance=250,
-      shape_filter=pymunk.ShapeFilter(categories=ALL_MASKS ^ Floor.collision_type),
+      shape_filter=pymunk.ShapeFilter(categories=ALL_MASKS() ^ Floor.collision_type),
     )
     if info and info.shape and info.shape in Floor.shape_to_obj:
       Floor.shape_to_obj[info.shape].delete()
