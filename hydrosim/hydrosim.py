@@ -43,6 +43,9 @@ class Drop(GameObject):
       if drop_obj in game.drops:
         game.drops.remove(drop_obj)
 
+    else:
+      drop_shape.body.apply_force_at_local_point(arbiter.normal * 100, (0, 0))
+
     return True
 
 
@@ -113,18 +116,27 @@ def update(game):
   min_x, min_y = 0, 0
   max_x, max_y = game.window.get_size()
 
-  max_drops = 1000
-  drops_per_second = 200
+  max_drops = 2000
+  drops_per_second = 100
   seconds_per_drop = 1 / drops_per_second
   drop_spawn = (1000, 500)
-  drop_scale = 50.0
+  spawn_jitter = (100, 100)
+  drop_scale = 5.0
 
   # Drop spawner
   if time.time() - game.last_drop > seconds_per_drop:
     game.last_drop = time.time()
 
     if len(game.drops) < max_drops:
-      drop = Drop(x=drop_spawn[0], y=drop_spawn[1], scale=drop_scale)
+      x_jitter = randint(-spawn_jitter[0]/2, spawn_jitter[0]/2)
+      y_jitter = randint(-spawn_jitter[1]/2, spawn_jitter[1]/2)
+
+      drop = Drop(
+        x=drop_spawn[0] + x_jitter,
+        y=drop_spawn[1] + y_jitter,
+        mass=randint(0, 10000),
+      )
+      pyglet.sprite.Sprite.update(drop, scale=random() * drop_scale)
       game.add_object(drop)
       game.drops.append(drop)
 
