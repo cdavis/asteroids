@@ -35,6 +35,8 @@ class Game:
     physics_class = physics.IMPLEMENTATIONS[config.physics]
     self.physics = physics_class(self, game_object_classes)
 
+    print(f"fullscreen: {config.fullscreen}\nvsync: {config.vsync}")
+
     self.window = pyglet.window.Window(
         fullscreen=config.fullscreen,
         width=config.window_width,
