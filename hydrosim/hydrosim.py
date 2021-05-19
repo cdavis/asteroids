@@ -14,9 +14,14 @@ import resources
 KEY = pyglet.window.key
 KEYS = KEY.KeyStateHandler()
 MOUSE = pyglet.window.mouse
-ALL_MASKS = pymunk.ShapeFilter.ALL_MASKS
 Vec2d = pymunk.Vec2d
 PI = math.pi
+
+def ALL_MASKS():  # So it works from either old or new pymunk
+  try:
+    return pymunk.ShapeFilter.ALL_MASKS()
+  except:
+    return pymunk.ShapeFilter.ALL_MASKS
 
 
 class Drop(GameObject):
@@ -105,7 +110,7 @@ class Floor(GameObject):
 def configure(config):
   config.physics = 'pymunk'
   config.fps = 120
-  #config.fullscreen = True
+  config.fullscreen = True
   config.window_width = None
   config.window_height = None
   #config.vsync = True
@@ -121,7 +126,7 @@ def update(game):
   seconds_per_drop = 1 / drops_per_second
   drop_spawn = (1000, 500)
   spawn_jitter = (100, 100)
-  drop_scale = 5.0
+  drop_scale = 10.0  # TODO: we got the sprite to scale, but not the collision body. fix that so things look way better.
 
   # Drop spawner
   if time.time() - game.last_drop > seconds_per_drop:
@@ -136,7 +141,7 @@ def update(game):
         y=drop_spawn[1] + y_jitter,
         mass=randint(0, 10000),
       )
-      pyglet.sprite.Sprite.update(drop, scale=random() * drop_scale)
+      pyglet.sprite.Sprite.update(drop, scale=1+random() * drop_scale)
       game.add_object(drop)
       game.drops.append(drop)
 
