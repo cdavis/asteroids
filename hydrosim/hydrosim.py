@@ -28,8 +28,10 @@ class Drop(GameObject):
   image = resources.bullet_image
   collides_with = ['Drop', 'Floor']
 
-  def create_body(self, mass=1, radius=4, **unused):
-    self.circle_body(mass, radius)
+  def create_body(self, mass, scale, radius=4.5, **unused):
+    self.circle_body(mass, int(radius * scale))
+    self.drop_scale = scale
+    pyglet.sprite.Sprite.update(self, scale=scale)
 
   @staticmethod
   def collision_Floor_begin(arbiter, space, data):
@@ -126,7 +128,7 @@ def update(game):
   seconds_per_drop = 1 / drops_per_second
   drop_spawn = (1000, 500)
   spawn_jitter = (100, 100)
-  drop_scale = 10.0  # TODO: we got the sprite to scale, but not the collision body. fix that so things look way better.
+  max_scale = 10.0  # TODO: we got the sprite to scale, but not the collision body. fix that so things look way better.
 
   # Drop spawner
   if time.time() - game.last_drop > seconds_per_drop:
@@ -136,12 +138,17 @@ def update(game):
       x_jitter = randint(-spawn_jitter[0]/2, spawn_jitter[0]/2)
       y_jitter = randint(-spawn_jitter[1]/2, spawn_jitter[1]/2)
 
+      #scale = 1 + random() * max_scale  # big ones take up most of the space.
+      scale = 1.0
+      while random() < 0.8 and scale < max_scale:
+        scale += random()
+
       drop = Drop(
         x=drop_spawn[0] + x_jitter,
         y=drop_spawn[1] + y_jitter,
         mass=randint(0, 10000),
+        scale=min(scale, max_scale),
       )
-      pyglet.sprite.Sprite.update(drop, scale=1+random() * drop_scale)
       game.add_object(drop)
       game.drops.append(drop)
 
@@ -181,26 +188,26 @@ def on_key_press(game, symbol, modifiers):  # Basic, one direction at a time
   current_magnitude = 900  #XXX
 
   if symbol == KEY.LEFT:
-    game.physics.space.gravity = (current_magnitude, 0)
-  elif symbol == KEY.RIGHT:
     game.physics.space.gravity = (-current_magnitude, 0)
+  elif symbol == KEY.RIGHT:
+    game.physics.space.gravity = (current_magnitude, 0)
   elif symbol == KEY.UP:
-    game.physics.space.gravity = (0, -current_magnitude)
-  elif symbol == KEY.DOWN:
     game.physics.space.gravity = (0, current_magnitude)
+  elif symbol == KEY.DOWN:
+    game.physics.space.gravity = (0, -current_magnitude)
 
 
 def on_key_press2(game, symbol, modifiers):  # Toggle gravity in each direction
   current = list(game.physics.space.gravity)
 
   if symbol == KEY.LEFT:
-    current[0] = 0 if current[0] else -900
-  elif symbol == KEY.RIGHT:
     current[0] = 0 if current[0] else 900
+  elif symbol == KEY.RIGHT:
+    current[0] = 0 if current[0] else -900
   elif symbol == KEY.UP:
-    current[1] = 0 if current[1] else -900
-  elif symbol == KEY.DOWN:
     current[1] = 0 if current[1] else 900
+  elif symbol == KEY.DOWN:
+    current[1] = 0 if current[1] else -900
   else:
     return
 

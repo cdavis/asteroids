@@ -110,12 +110,13 @@ class Game:
 
     # Update sprite positions/angles from physics shapes
     for obj in self.physics.objects:
-      #logging.debug(f'updating obj {obj}: body.angle={obj.body.angle} pos.x={obj.body.position.x} pos.y={obj.body.position.y}')
-      obj.rotation = math.degrees(-obj.body.angle) + 180
-      obj.position = obj.body.position
+      #logging.info(f'updating obj {obj}: body.angle={obj.body.angle} pos.x={obj.body.position.x} pos.y={obj.body.position.y}')
+      try:  # Sadly, these can hit NaN
+        obj.rotation = math.degrees(-obj.body.angle) + 180
+        obj.position = obj.body.position
+      except ValueError:
+        pass #logging.exception(f'ValueError while updating obj {obj}: body.angle={obj.body.angle} pos.x={obj.body.position.x} pos.y={obj.body.position.y}')
       obj.update(now, dt)
-      #if obj.body.body_type == pymunk.Body.KINEMATIC:  #XXX
-      #  self.physics.space.reindex_shapes_for_body(obj.body)
 
     # detect game win / loss conditions
     # update hud
