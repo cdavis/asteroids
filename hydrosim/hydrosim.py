@@ -4,6 +4,7 @@ import logging
 import math
 from random import random, randint
 import time
+import traceback
 
 import pyglet
 import pymunk
@@ -137,7 +138,7 @@ def update(game):
   max_x, max_y = game.window.get_size()
 
   max_drops = 2000
-  drops_per_second = 100
+  drops_per_second = 10  #XXX 100 before
   seconds_per_drop = 1 / drops_per_second
   drop_spawn = (1000, 500)
   spawn_jitter = (100, 100)
@@ -162,8 +163,8 @@ def update(game):
         mass=randint(0, 10),
         scale=min(scale, max_scale),
       )
-      game.add_object(drop)
       game.drops.append(drop)
+      game.add_object(drop)
 
   # Delete fallen drops
   for drop in list(game.drops):
@@ -180,12 +181,12 @@ def update(game):
       game.show_cursor = pyglet.shapes.Rectangle(
           x=MOUSE_X,
           y=MOUSE_Y,
-          width=500,
-          height=20,
+          width=250,
+          height=40,
           color=(255, 0, 0),
           batch=game.hud_batch,
       )
-    game.show_cursor.anchor_position = (250, 10)
+    game.show_cursor.anchor_position = (125, 20)
     game.show_cursor.rotation = math.degrees(-game.cursor_angle) + 180
     game.show_cursor.opacity = 50
     game.show_cursor_frames_left -= 1
@@ -320,8 +321,8 @@ def init(game):
   game.add_object(mega_floor4)
 
   # GOOOOOOOAAAAAL
-  goal = Floor(x=1300, y=250, batch=game.main_batch, is_goal=True)
-  game.add_object(goal)
+  #goal = Floor(x=1300, y=250, batch=game.main_batch, is_goal=True)
+  #game.add_object(goal)
 
   # Damping makes interactions settle down nicely but also causes our asteroids to just "stop" at some point.
   #game.physics.space.damping = 0.8
