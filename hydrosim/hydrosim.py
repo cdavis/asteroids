@@ -52,7 +52,7 @@ class Drop(GameObject):
 
     else:
       #force = Vec2d(1000, 0)
-      force = arbiter.normal * 1000
+      force = arbiter.normal * (10000 if floor_obj.is_boing else 100)
       drop_shape.body.apply_impulse_at_local_point(force, (0, 0))
 
     return True
@@ -71,6 +71,7 @@ class Floor(GameObject):
       batch=None,
       color=(55, 55, 255),
       is_goal=False,
+      is_boing=False,
       body_type=pymunk.Body.STATIC,
       **unused):
     assert batch
@@ -89,17 +90,23 @@ class Floor(GameObject):
 
     self.body.angle += rotate
 
+    if is_goal:
+        color = (255, 255, 255)
+    elif is_boing:
+        color = (255, 0, 255)
+
     # Draw our own visual instead of self.image
     self.rect = pyglet.shapes.Rectangle(
         x=self.x,
         y=self.y,
         width=width,
         height=height,
-        color=color if not is_goal else (255, 255, 55),
+        color=color,
         batch=batch,
     )
     self.rect.anchor_position = (width / 2, height / 2)
     self.is_goal = is_goal
+    self.is_boing = is_boing
 
   def update(self, now, dt):
     self.rect.rotation = math.degrees(-self.body.angle) + 180
@@ -167,7 +174,7 @@ def update(game):
 def on_mouse_press(game, x, y, button, modifiers):
   #print(f'on_mouse_press(x={x}, y={y}, button={button}, modifiers={modifiers})')
   if button in (MOUSE.LEFT, MOUSE.MIDDLE):
-    floor = Floor(x=x, y=y, rotate=(30 * random()) - 15, batch=game.main_batch, is_goal=button == MOUSE.MIDDLE)
+    floor = Floor(x=x, y=y, rotate=(30 * random()) - 15, batch=game.main_batch, is_boing=button == MOUSE.MIDDLE)
     game.add_object(floor)
   elif button == MOUSE.RIGHT:
     point = (x, y)
