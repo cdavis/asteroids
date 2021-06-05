@@ -46,6 +46,7 @@ class Game:
     self.fps_display = pyglet.window.FPSDisplay(window=self.window)
     self.bg_batch = pyglet.graphics.Batch()
     self.main_batch = pyglet.graphics.Batch()
+    self.hud_batch = pyglet.graphics.Batch()
     self.keys = pyglet.window.key.KeyStateHandler()
     self.mousebuttons = pyglet.window.mouse.MouseStateHandler()
     self.window.push_handlers(self, self.keys, self.mousebuttons)
@@ -129,6 +130,7 @@ class Game:
     self.window.clear()
     self.bg_batch.draw()
     self.main_batch.draw()
+    self.hud_batch.draw()
     self.fps_display.draw()
 
 

@@ -17,6 +17,10 @@ MOUSE = pyglet.window.mouse
 Vec2d = pymunk.Vec2d
 PI = math.pi
 
+MOUSE_X = 0
+MOUSE_Y = 0
+
+
 def ALL_MASKS():  # So it works from either old or new pymunk
   try:
     return pymunk.ShapeFilter.ALL_MASKS()
@@ -170,11 +174,32 @@ def update(game):
 
   game.obj_count_update()
 
+  # Draw the floor cursor
+  if game.show_cursor_frames_left > 0:
+    if game.show_cursor is None:
+      game.show_cursor = pyglet.shapes.Rectangle(
+          x=MOUSE_X,
+          y=MOUSE_Y,
+          width=500,
+          height=20,
+          color=(255, 0, 0),
+          batch=game.hud_batch,
+      )
+    game.show_cursor.anchor_position = (250, 10)
+    game.show_cursor.rotation = math.degrees(-game.cursor_angle) + 180
+    game.show_cursor.opacity = 50
+    game.show_cursor_frames_left -= 1
 
+  elif game.show_cursor:
+    game.show_cursor.delete()
+    game.show_cursor = None
+ 
 def on_mouse_press(game, x, y, button, modifiers):
   #print(f'on_mouse_press(x={x}, y={y}, button={button}, modifiers={modifiers})')
   if button in (MOUSE.LEFT, MOUSE.MIDDLE):
-    floor = Floor(x=x, y=y, rotate=(30 * random()) - 15, batch=game.main_batch, is_boing=button == MOUSE.MIDDLE)
+    #angle = (30 * random()) - 15
+    angle = game.cursor_angle
+    floor = Floor(x=x, y=y, rotate=angle, batch=game.main_batch, is_boing=button == MOUSE.MIDDLE)
     game.add_object(floor)
   elif button == MOUSE.RIGHT:
     point = (x, y)
@@ -188,9 +213,21 @@ def on_mouse_press(game, x, y, button, modifiers):
 
 
 def on_mouse_motion(game, x, y, dx, dy):
+  global MOUSE_X, MOUSE_Y
+
+  MOUSE_X = x
+  MOUSE_Y = y
+
   if game.cursor_obj:
     game.cursor_obj.body.position = (x, y)
     game.cursor_obj.rect.position = (x, y)
+
+  if game.show_cursor:
+    game.show_cursor.position = (x, y)
+
+def on_mouse_scroll(game, x, y, scroll_x, scroll_y):
+  game.cursor_angle += scroll_y * 0.05
+  game.show_cursor_frames_left = 100
 
 
 def on_key_press(game, symbol, modifiers):  # Basic, one direction at a time
@@ -239,10 +276,16 @@ def init(game):
     game.cursor_obj = Floor(x=0, y=0, rotate=0, height=200, batch=game.main_batch, body_type=pymunk.Body.KINEMATIC)
     game.add_object(game.cursor_obj)
 
+  # Angle at which new floors are created
+  game.cursor_angle = 0.0
+  game.show_cursor_frames_left = 0
+  game.show_cursor = None
+
   # Setup event handling
   game.window.on_mouse_press = functools.partial(on_mouse_press, game)
   game.window.on_mouse_motion = functools.partial(on_mouse_motion, game)
   game.window.on_key_press = functools.partial(on_key_press, game)
+  game.window.on_mouse_scroll = functools.partial(on_mouse_scroll, game)
 
   # Object counter
   text_opts = {
