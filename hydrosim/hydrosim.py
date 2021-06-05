@@ -51,7 +51,9 @@ class Drop(GameObject):
         game.drops.remove(drop_obj)
 
     else:
-      drop_shape.body.apply_force_at_local_point(arbiter.normal * 100, (0, 0))
+      #force = Vec2d(1000, 0)
+      force = arbiter.normal * 1000
+      drop_shape.body.apply_impulse_at_local_point(force, (0, 0))
 
     return True
 
@@ -146,7 +148,7 @@ def update(game):
       drop = Drop(
         x=drop_spawn[0] + x_jitter,
         y=drop_spawn[1] + y_jitter,
-        mass=randint(0, 10000),
+        mass=randint(0, 10),
         scale=min(scale, max_scale),
       )
       game.add_object(drop)
