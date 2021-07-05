@@ -14,6 +14,9 @@ pyglet.resource.reindex()
 bullet_image = pyglet.resource.image("bullet.png")
 center_image(bullet_image)
 
+coconut_image = pyglet.resource.image("coconut_small.png")
+center_image(coconut_image)
+
 floor_image = pyglet.resource.image("lotsapixels.png")
 #floor_image = pyglet.resource.image("bullet.png")
 center_image(floor_image)
@@ -53,4 +56,5 @@ SONGS = {
 EFFECTS = {
   "blip": pyglet.resource.media("blip.wav", streaming=False),
   "boing": pyglet.resource.media("boing.wav", streaming=False),
+  "wilhelm": pyglet.resource.media("wilhelm.wav", streaming=False),
 }

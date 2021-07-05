@@ -30,13 +30,14 @@ def ALL_MASKS():  # So it works from either old or new pymunk
 
 
 class Drop(GameObject):
-  image = resources.bullet_image
+  #image = resources.bullet_image
+  image = resources.coconut_image
   collides_with = ['Drop', 'Floor']
 
   def create_body(self, mass, scale, radius=4.5, **unused):
     self.circle_body(mass, int(radius * scale))
     self.drop_scale = scale
-    pyglet.sprite.Sprite.update(self, scale=scale)
+    pyglet.sprite.Sprite.update(self, scale=scale * 0.1)
 
   @staticmethod
   def collision_Floor_begin(arbiter, space, data):
@@ -48,6 +49,7 @@ class Drop(GameObject):
       drop_obj = game.get_object_from_body(drop_shape.body)
       floor_obj = game.get_object_from_body(floor_shape.body)
     except KeyError:
+      game.play_effect("wilhelm")
       return False
 
     if floor_obj.is_goal:
@@ -144,7 +146,7 @@ def update(game):
   max_x, max_y = game.window.get_size()
 
   max_drops = 2000
-  drops_per_second = 10  #XXX 100 before
+  drops_per_second = 1  #XXX 100 before
   seconds_per_drop = 1 / drops_per_second
   drop_spawn = (1000, 500)
   spawn_jitter = (100, 100)
