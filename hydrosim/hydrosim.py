@@ -56,6 +56,12 @@ class Drop(GameObject):
         game.drops.remove(drop_obj)
 
     else:
+      # Sound effect
+      if floor_obj.is_boing:
+        game.play_effect("boing")
+      else:
+        game.play_effect("blip")
+
       #force = Vec2d(1000, 0)
       force = arbiter.normal * (10000 if floor_obj.is_boing else 100)
       drop_shape.body.apply_impulse_at_local_point(force, (0, 0))

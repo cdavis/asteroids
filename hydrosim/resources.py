@@ -18,6 +18,7 @@ floor_image = pyglet.resource.image("lotsapixels.png")
 #floor_image = pyglet.resource.image("bullet.png")
 center_image(floor_image)
 
+
 '''
 
 # Load the three main resources and get them to draw centered
@@ -46,4 +47,10 @@ bullet_sound = pyglet.resource.media("bullet.wav", streaming=False)
 # Available music
 SONGS = {
   "stuff": pyglet.resource.media("theme_song.wav"),
+}
+
+# Sound effects
+EFFECTS = {
+  "blip": pyglet.resource.media("blip.wav", streaming=False),
+  "boing": pyglet.resource.media("boing.wav", streaming=False),
 }

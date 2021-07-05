@@ -50,7 +50,8 @@ class Game:
     self.keys = pyglet.window.key.KeyStateHandler()
     self.mousebuttons = pyglet.window.mouse.MouseStateHandler()
     self.window.push_handlers(self, self.keys, self.mousebuttons)
-    self.player = pyglet.media.Player()
+    self.song_player = pyglet.media.Player()
+    self.effects_player = pyglet.media.Player()
 
     # Keep track of how far real time is ahead of our physics so we can catch
     # up our simulation gracefully.
@@ -85,9 +86,15 @@ class Game:
 
   def play_song(self, name, loop=False):
     song_source = resources.SONGS[name]
-    self.player.queue(song_source)
-    self.player.loop = loop
-    self.player.play()
+    self.song_player.queue(song_source)
+    self.song_player.loop = loop
+    self.song_player.play()
+
+  def play_effect(self, name):
+    effect_source = resources.EFFECTS[name]
+    effect_source.play()  # returns a Player
+    #self.effects_player.queue(effect_source)
+    #self.effects_player.play()
 
   def run(self):
     seconds_per_frame = 1 / self.config.fps  # delay between game updates
