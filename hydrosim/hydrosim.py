@@ -59,16 +59,53 @@ class Drop(GameObject):
 
     else:
       # Sound effect
-      if floor_obj.is_boing:
-        game.play_effect("boing")
-      else:
-        game.play_effect("blip")
+      '''
+      if arbiter.is_first_contact:
+        print(f'thing={arbiter.impulse_velocity}')
+        volume = 0.5  # arbiter.total_ke
+        if floor_obj.is_boing:
+          game.play_effect("boing", volume=volume)
+        else:
+          game.play_effect("blip", volume=volume)
+      '''
 
       #force = Vec2d(1000, 0)
       force = arbiter.normal * (10000 if floor_obj.is_boing else 100)
       drop_shape.body.apply_impulse_at_local_point(force, (0, 0))
 
     return True
+
+  @staticmethod
+  def collision_Floor_post_solve(arbiter, space, data):
+    drop_shape, floor_shape = arbiter.shapes
+    game = data['game']
+
+    # This can fail because pymunk is silly.
+    try:
+      drop_obj = game.get_object_from_body(drop_shape.body)
+      floor_obj = game.get_object_from_body(floor_shape.body)
+    except KeyError:
+      game.play_effect("wilhelm")
+      return False
+
+    if not floor_obj.is_goal:
+      # Sound effect
+      if arbiter.is_first_contact:
+        print(f'thing={arbiter.total_ke}')
+        volume = 1.0
+        if arbiter.total_ke < 100000:
+          try:
+            volume = math.log10(arbiter.total_ke) / 6.0
+          except ValueError:
+            volume = 0.5
+        if arbiter.total_ke < 10000:
+          volume = 0.0
+
+        print(f"yolo squared == {volume}")
+        if floor_obj.is_boing:
+          game.play_effect("boing", volume=volume)
+        else:
+          game.play_effect("blip", volume=volume)
 
 
 class Floor(GameObject):

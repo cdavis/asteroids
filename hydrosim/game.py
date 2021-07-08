@@ -90,9 +90,10 @@ class Game:
     self.song_player.loop = loop
     self.song_player.play()
 
-  def play_effect(self, name):
+  def play_effect(self, name, volume=1.0):
     effect_source = resources.EFFECTS[name]
-    effect_source.play()  # returns a Player
+    player = effect_source.play()  # returns a Player
+    player.volume = volume
     #self.effects_player.queue(effect_source)
     #self.effects_player.play()
 
