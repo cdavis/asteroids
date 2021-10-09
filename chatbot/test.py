@@ -156,7 +156,7 @@ def _get_page(name):
         return wikipedia.page(choice)
  
 
-token = 'ODk2NTAxNjgzNzUwODU4NzUy.YWICQQ.4pQgC2o1FiHEKABgu9ZGcilkhss'
+token = open('token').read().strip()
 
 client = MyClient()
 client.run(token)

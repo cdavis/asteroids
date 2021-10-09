@@ -92,20 +92,22 @@ class Drop(GameObject):
       # Sound effect
       if arbiter.is_first_contact:
         print(f'thing={arbiter.total_ke}')
-        volume = 1.0
-        if arbiter.total_ke < 100000:
-          try:
-            volume = math.log10(arbiter.total_ke) / 6.0
-          except ValueError:
-            volume = 0.5
-        if arbiter.total_ke < 10000:
-          volume = 0.0
+        volume = 0.0
+        #if arbiter.total_ke < 100000:
+        #  try:
+        #    volume = math.log10(arbiter.total_ke) / 6.0
+        #  except ValueError:
+        #    volume = 0.5
+        #if arbiter.total_ke < 10000:
+        #  volume = 0.0
+        mass = drop_obj.body.mass
+        energy = arbiter.total_ke
 
-        print(f"yolo squared == {volume}")
+        print(f"volume == {volume}")
         if floor_obj.is_boing:
           game.play_effect("boing", volume=volume)
-        else:
-          game.play_effect("blip", volume=volume)
+        elif energy > 1000000:
+          game.play_effect("blip", volume=1.0)
 
 
 class Floor(GameObject):
