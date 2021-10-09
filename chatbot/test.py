@@ -1,3 +1,5 @@
+#!/usr/bin/env python3 
+
 import asyncio
 import discord
 import random
@@ -7,11 +9,14 @@ import wikipedia
 
 
 punctuation = re.compile('[\.!?] ')
+useless_words = set()
 
 
 class MyClient(discord.Client):
     ignore_bots = False
     seconds_delay = 2
+    wisdom_spam_limit = 2000
+    wisdom_newline_limit = 6
     last_spoke = 999999999999  # to ensure we get to on_ready before talking
 
     async def on_ready(self):
@@ -83,8 +88,11 @@ class MyClient(discord.Client):
             return
 
         words = message.content.split()
-        words = [w for w in words if not w.startswith('<')]  # filter out mentions
+        words = [w for w in words if not w.startswith('<') and w not in useless_words]  # filter out mentions
         words.sort(key=len)
+        if not words:
+            return
+
         word = words[-1]
 
         if len(word) < 4:
@@ -92,7 +100,9 @@ class MyClient(discord.Client):
 
         results = wikipedia.search(word)
         print(f"Search for '{word}' yielded {len(results)} results")
-        if results:
+        if not results:
+            useless_words.add(word)
+        else:
             page = get_page(results[0])
             if not page:
                 return
@@ -112,6 +122,12 @@ class MyClient(discord.Client):
 
             next_index = next_punc_match.start()
             wisdom = next_part[:next_index]
+            if len(wisdom) > self.wisdom_spam_limit:
+                return
+
+            if wisdom.count('\n') > self.wisdom_newline_limit:
+                return
+
             return wisdom
 
     def get_snark(self, message):
