@@ -7,9 +7,12 @@ import re
 import time
 import wikipedia
 
+from discord.ext import tasks
+
 
 punctuation = re.compile('[\.!?] ')
 useless_words = set()
+channel_id = 896500672843898893
 
 
 class MyClient(discord.Client):
@@ -18,13 +21,37 @@ class MyClient(discord.Client):
     wisdom_spam_limit = 2000
     wisdom_newline_limit = 6
     last_spoke = 999999999999  # to ensure we get to on_ready before talking
+    last_heard = 999999999999
 
     async def on_ready(self):
         print('Logged on as {0}!'.format(self.user))
         self.last_spoke = time.time()
+        self.last_heard = time.time()
         self.speaking = False
+        self.think.start()
+
+    @tasks.loop(seconds=10)
+    async def think(self):
+        if time.time() - self.last_heard < 10:
+            return
+
+        channel = self.get_channel(channel_id)
+
+        if random.random() < 0.5:
+            await channel.send('yo')
 
     async def on_message(self, message):
+        if not message.content:
+            return
+
+        if message.author.name == 'knowitall':
+            return
+
+        if self.ignore_bots and message.author.bot:
+            return
+
+        self.last_heard = time.time()
+
         since_spoke = time.time() - self.last_spoke
         if since_spoke < self.seconds_delay or self.speaking:
             return
@@ -78,15 +105,6 @@ class MyClient(discord.Client):
 
 
     async def get_wisdom(self, message):
-        if not message.content:
-            return
-
-        if message.author.name == 'knowitall':
-            return
-
-        if self.ignore_bots and message.author.bot:
-            return
-
         words = message.content.split()
         words = [w for w in words if not w.startswith('<') and w not in useless_words]  # filter out mentions
         words.sort(key=len)
