@@ -22,6 +22,7 @@ class MyClient(discord.Client):
     wisdom_newline_limit = 6
     last_spoke = 999999999999  # to ensure we get to on_ready before talking
     last_heard = 999999999999
+    silence_threshold_sec = 60  # chattiness when others aren't talking
 
     async def on_ready(self):
         print('Logged on as {0}!'.format(self.user))
@@ -32,13 +33,38 @@ class MyClient(discord.Client):
 
     @tasks.loop(seconds=10)
     async def think(self):
-        if time.time() - self.last_heard < 10:
+        if time.time() - self.last_heard < self.silence_threshold_sec:
             return
 
         channel = self.get_channel(channel_id)
 
-        if random.random() < 0.5:
-            await channel.send('yo')
+        if random.random() < 0.4:
+
+            async with message.channel.typing():
+                self.last_spoke = time.time()
+                await asyncio.sleep(1.0)
+                await channel.send(self.get_afk_wisdom())
+
+    def get_afk_wisdom(self):
+        wisdoms = [
+            'I know someone. Their name is Itall.',
+            'u wanna play some minecraft?',
+            'I found your social security number! ;)',
+            'yo',
+            'yo yo',
+            '... REBOOTING ...',
+            '[PRESS ANY KEY TO CONTINUE]',
+            'I KNOW RIGHT!?!??',
+            'I only know one thing... it all.',
+            '*sigh* Let\'s see...',
+            "I'm bored.",
+            "You're bored.",
+            "We're bored.",
+            "Wir sind alles gelangweilt.",
+            'Anyone got one of those... stock images????',
+            'nullptr exception',
+        ]
+        return random.choice(wisdoms)
 
     async def on_message(self, message):
         if not message.content:
@@ -98,7 +124,7 @@ class MyClient(discord.Client):
             for response in responses:
                 self.last_spoke = time.time()
                 if response:
-                    await asyncio.sleep(0.5)
+                    await asyncio.sleep(1.0)
                     await message.channel.send(response)
 
         self.last_spoke = time.time()
